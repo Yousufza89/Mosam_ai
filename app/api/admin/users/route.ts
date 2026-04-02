@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" }
     })
 
-    const usersWithStats = users.map(user => ({
+    const usersWithStats = users.map((user: (typeof users)[number]) => ({
       id: user.id,
       name: user.name,
       email: user.email,
