@@ -30,7 +30,7 @@ export default function WeeklyForecast({ forecast, city }: WeeklyForecastProps) 
                 {day.day}
               </p>
               <p className="text-sm font-semibold text-foreground">
-                {day.temp}°
+                {day.high}°
               </p>
             </div>
             <div className="text-right text-[11px] text-muted-foreground">

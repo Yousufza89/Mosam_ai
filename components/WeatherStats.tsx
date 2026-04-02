@@ -1,16 +1,16 @@
 "use client";
 
-import type { CityWeather } from "@/data/weatherData";
+import type { CityWeatherData } from "@/data/weatherData";
 
 type WeatherStatsProps = {
-  data: CityWeather;
+  data: CityWeatherData;
 };
 
 export default function WeatherStats({ data }: WeatherStatsProps) {
   const stats = [
     { label: "Humidity", value: `${data.humidity}%` },
-    { label: "Wind", value: `${data.windSpeed} km/h` },
-    { label: "Precip", value: `${data.precipitation} mm` },
+    { label: "Wind", value: data.wind },
+    { label: "Precip", value: data.precip },
   ];
 
   return (

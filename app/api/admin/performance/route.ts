@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       }
     })
 
-    const cityPerformance = cityStats.map(stat => {
+    const cityPerformance = cityStats.map((stat: (typeof cityStats)[number]) => {
       const mockAccuracy = 75 + Math.random() * 15
 
       return {

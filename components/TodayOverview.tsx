@@ -1,18 +1,18 @@
 "use client";
 
-import type { CityWeather } from "@/data/weatherData";
+import type { CityWeatherData } from "@/data/weatherData";
 
 type TodayOverviewProps = {
-  data: CityWeather;
+  data: CityWeatherData;
 };
 
 export default function TodayOverview({ data }: TodayOverviewProps) {
   const items = [
-    { label: "Sunrise", value: data.sunrise },
-    { label: "Sunset", value: data.sunset },
-    { label: "Pressure", value: `${data.pressure} hPa` },
-    { label: "Visibility", value: `${data.visibility} km` },
-    { label: "UV Index", value: `${data.uvIndex} / 10` },
+    { label: "Trend", value: data.trend },
+    { label: "Condition", value: data.condition },
+    { label: "Pressure", value: data.pressure },
+    { label: "Visibility", value: data.visibility },
+    { label: "UV Index", value: data.uvIndex },
     { label: "Rain", value: `${data.rainChance}%` },
   ];
 

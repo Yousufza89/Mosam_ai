@@ -1,13 +1,15 @@
 "use client";
 
-import type { City, CityWeather } from "@/data/weatherData";
+import type { City, CityWeatherData } from "@/data/weatherData";
 
 type TemperatureCardProps = {
   city: City;
-  data: CityWeather;
+  data: CityWeatherData;
 };
 
 export default function TemperatureCard({ city, data }: TemperatureCardProps) {
+  const todayForecast = data.forecast[0];
+
   return (
     <div className="weather-glass rounded-2xl p-5">
       <div className="flex items-start justify-between">
@@ -23,8 +25,8 @@ export default function TemperatureCard({ city, data }: TemperatureCardProps) {
           </p>
         </div>
         <div className="text-right text-xs text-muted-foreground">
-          <p>H {data.high}°</p>
-          <p>L {data.low}°</p>
+          <p>H {todayForecast?.high ?? data.temp}°</p>
+          <p>L {todayForecast?.low ?? data.feelsLike}°</p>
         </div>
       </div>
       <div className="mt-4 h-1 w-full rounded-full bg-foreground/10">
