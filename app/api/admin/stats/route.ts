@@ -98,7 +98,7 @@ export async function GET(request: Request) {
         mostActiveCity: mostActiveCity.city,
         mostActiveCityCount: mostActiveCity._count.city,
         averageConfidence: avgConfidence._avg.confidenceScore || 0,
-        cityBreakdown: cityStats.map(stat => ({
+        cityBreakdown: cityStats.map((stat: (typeof cityStats)[number]) => ({
           city: stat.city,
           count: stat._count.city
         }))
