@@ -1,0 +1,247 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 60% 10%;
+    --foreground: 210 20% 98%;
+    --card: 210 50% 14%;
+    --card-foreground: 210 20% 98%;
+    --popover: 210 50% 14%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 199 89% 70%;
+    --primary-foreground: 210 60% 8%;
+    --secondary: 210 40% 20%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 210 30% 18%;
+    --muted-foreground: 210 15% 55%;
+    --accent: 199 89% 70%;
+    --accent-foreground: 210 60% 8%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 210 30% 22%;
+    --input: 210 30% 22%;
+    --ring: 199 89% 70%;
+    --radius: 0.75rem;
+
+    --weather-glass: 210 40% 98%;
+    --weather-glass-opacity: 0.07;
+    --weather-glass-border-opacity: 0.12;
+    --weather-gradient-start: 212 55% 12%;
+    --weather-gradient-mid: 215 58% 20%;
+    --weather-gradient-end: 210 65% 28%;
+    --weather-cloud-body: 210 60% 85%;
+    --weather-cloud-puff: 210 50% 90%;
+    --weather-rain: 199 80% 70%;
+    --weather-warm: 30 90% 60%;
+    --weather-cool: 199 70% 60%;
+    --weather-chip-bg: 210 40% 98%;
+
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+  }
+
+  .light {
+    --background: 210 40% 96%;
+    --foreground: 210 50% 10%;
+    --card: 210 30% 98%;
+    --card-foreground: 210 50% 10%;
+    --popover: 210 30% 98%;
+    --popover-foreground: 210 50% 10%;
+    --primary: 199 80% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 90%;
+    --secondary-foreground: 210 40% 20%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 210 15% 40%;
+    --accent: 199 80% 38%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 82%;
+    --input: 210 20% 82%;
+    --ring: 199 80% 38%;
+
+    --weather-glass: 210 30% 20%;
+    --weather-glass-opacity: 0.06;
+    --weather-glass-border-opacity: 0.10;
+    --weather-gradient-start: 210 50% 88%;
+    --weather-gradient-mid: 210 55% 80%;
+    --weather-gradient-end: 199 50% 72%;
+    --weather-cloud-body: 0 0% 100%;
+    --weather-cloud-puff: 0 0% 98%;
+    --weather-rain: 199 60% 50%;
+    --weather-warm: 30 90% 50%;
+    --weather-cool: 199 70% 45%;
+    --weather-chip-bg: 210 30% 20%;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+
+  input,
+  select,
+  textarea {
+    color: rgb(15 23 42);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(148 163 184);
+    opacity: 1;
+  }
+
+  select option {
+    color: rgb(15 23 42);
+    background-color: rgb(255 255 255);
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgb(15 23 42);
+    box-shadow: 0 0 0 1000px rgb(255 255 255) inset;
+    transition: background-color 9999s ease-out 0s;
+  }
+}
+
+@keyframes cloudFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes rainFall {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) rotate(12deg);
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px) rotate(12deg);
+  }
+}
+
+@keyframes bgRainFall {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) rotate(12deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(12deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes orbFloat {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 15px) scale(0.95);
+  }
+}
+
+.animate-cloud-float {
+  animation: cloudFloat 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-orb-float {
+  animation: orbFloat 20s ease-in-out infinite;
+}
+
+.weather-glass {
+  background: hsl(var(--weather-glass) / var(--weather-glass-opacity));
+  border: 1px solid hsl(var(--weather-glass) / var(--weather-glass-border-opacity));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.weather-glass-hover:hover {
+  background: hsl(var(--weather-glass) / 0.13);
+  border-color: hsl(var(--weather-glass) / 0.2);
+}
+
+.weather-page-bg {
+  background: linear-gradient(
+    155deg,
+    hsl(var(--weather-gradient-start)) 0%,
+    hsl(var(--weather-gradient-mid)) 40%,
+    hsl(var(--weather-gradient-end)) 100%
+  );
+}
