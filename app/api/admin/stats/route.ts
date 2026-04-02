@@ -103,7 +103,7 @@ export async function GET(request: Request) {
           count: stat._count.city
         }))
       },
-      recentActivity: recentPredictions.map(pred => ({
+      recentActivity: recentPredictions.map((pred: (typeof recentPredictions)[number]) => ({
         id: pred.id,
         city: pred.city,
         user: pred.user.name || pred.user.email,
