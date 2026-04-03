@@ -321,6 +321,26 @@ export default function UserDashboard() {
                   </p>
                 </div>
 
+                {/* AI Advice Card */}
+                {prediction.advice && (
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-xl transform transition hover:scale-[1.02] duration-300">
+                    <div className="flex items-start space-x-4">
+                      <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md border border-white/30 shadow-inner">
+                        <span className="text-2xl block animate-bounce">🤖</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <p className="text-xs font-bold opacity-90 tracking-widest uppercase">MOSAM AI INTELLIGENCE</p>
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                        </div>
+                        <p className="text-lg leading-relaxed font-medium italic">
+                          "{prediction.advice}"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Save Button */}
                 <button
                   onClick={handleSavePrediction}
