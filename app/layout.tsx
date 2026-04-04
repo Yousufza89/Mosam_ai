@@ -1,24 +1,25 @@
 import "./globals.css";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 
 import Navbar from "@/components/Navbar";
 import { Providers } from "@/components/Providers";
 
-const spaceGrotesk = Space_Grotesk({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-heading",
 });
 
-const manrope = Manrope({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata = {
-  title: "Mosam.ai - AI Weather Predictions",
-  description: "Self-correcting weather predictions using RL",
+  title: "Mosam.ai - AI-Powered Weather Intelligence",
+  description: "Next-level weather predictions using advanced machine learning for Pakistani cities.",
+  icons: {
+    icon: "/favicon.ico",
+  }
 };
 
 export default function RootLayout({
@@ -27,11 +28,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${spaceGrotesk.variable} ${manrope.variable} font-body`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${outfit.variable} ${plusJakartaSans.variable} font-body bg-background text-foreground antialiased`}>
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+          </div>
         </Providers>
       </body>
     </html>

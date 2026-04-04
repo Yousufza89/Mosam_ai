@@ -14,7 +14,19 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const { name } = await request.json()
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during update:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
+    const body = await request.json()
+    const { name } = body
     const trimmedName = typeof name === "string" ? name.trim() : ""
 
     if (!trimmedName) {
@@ -39,10 +51,10 @@ export async function PATCH(request: Request) {
         createdAt: updatedUser.createdAt
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Update profile error:", error)
     return NextResponse.json(
-      { error: "Failed to update profile" },
+      { error: error.message || "Failed to update profile" },
       { status: 500 }
     )
   }

@@ -15,7 +15,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const { password } = await request.json()
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during account deletion:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
+    const body = await request.json()
+    const { password } = body
 
     if (!password) {
       return NextResponse.json(
@@ -51,10 +63,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: "Account deleted successfully"
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Delete account error:", error)
     return NextResponse.json(
-      { error: "Failed to delete account" },
+      { error: error.message || "Failed to delete account" },
       { status: 500 }
     )
   }

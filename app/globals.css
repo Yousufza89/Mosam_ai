@@ -1,247 +1,140 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 60% 10%;
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 220.9 39.3% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262.1 83.3% 57.8%;
+    --radius: 1rem;
+
+    /* Custom weather colors - Light Mode */
+    --weather-blue: 217 91% 60%;
+    --weather-purple: 262 83% 58%;
+    --weather-amber: 38 92% 50%;
+    --weather-rose: 346 84% 61%;
+    --glass-background: 0 0% 100% / 0.6;
+    --glass-border: 0 0% 100% / 0.1;
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    
+    --font-heading: "Outfit", sans-serif;
+    --font-body: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .dark {
+    --background: 224 71.4% 4.1%;
     --foreground: 210 20% 98%;
-    --card: 210 50% 14%;
+    --card: 224 71.4% 4.1%;
     --card-foreground: 210 20% 98%;
-    --popover: 210 50% 14%;
+    --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
-    --primary: 199 89% 70%;
-    --primary-foreground: 210 60% 8%;
-    --secondary: 210 40% 20%;
-    --secondary-foreground: 210 20% 90%;
-    --muted: 210 30% 18%;
-    --muted-foreground: 210 15% 55%;
-    --accent: 199 89% 70%;
-    --accent-foreground: 210 60% 8%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 210 30% 22%;
-    --input: 210 30% 22%;
-    --ring: 199 89% 70%;
-    --radius: 0.75rem;
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 263.4 70% 50.4%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 263.4 70% 50.4%;
 
-    --weather-glass: 210 40% 98%;
-    --weather-glass-opacity: 0.07;
-    --weather-glass-border-opacity: 0.12;
-    --weather-gradient-start: 212 55% 12%;
-    --weather-gradient-mid: 215 58% 20%;
-    --weather-gradient-end: 210 65% 28%;
-    --weather-cloud-body: 210 60% 85%;
-    --weather-cloud-puff: 210 50% 90%;
-    --weather-rain: 199 80% 70%;
-    --weather-warm: 30 90% 60%;
-    --weather-cool: 199 70% 60%;
-    --weather-chip-bg: 210 40% 98%;
-
-    --font-heading: "Space Grotesk", sans-serif;
-    --font-body: "Inter", sans-serif;
+    /* Custom weather colors - Dark Mode */
+    --weather-blue: 217 91% 60%;
+    --weather-purple: 262 83% 58%;
+    --weather-amber: 38 92% 50%;
+    --weather-rose: 346 84% 61%;
+    --glass-background: 224 71.4% 4.1% / 0.4;
+    --glass-border: 224 71.4% 4.1% / 0.2;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
+}
 
-  .light {
-    --background: 210 40% 96%;
-    --foreground: 210 50% 10%;
-    --card: 210 30% 98%;
-    --card-foreground: 210 50% 10%;
-    --popover: 210 30% 98%;
-    --popover-foreground: 210 50% 10%;
-    --primary: 199 80% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 90%;
-    --secondary-foreground: 210 40% 20%;
-    --muted: 210 20% 92%;
-    --muted-foreground: 210 15% 40%;
-    --accent: 199 80% 38%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 82%;
-    --input: 210 20% 82%;
-    --ring: 199 80% 38%;
-
-    --weather-glass: 210 30% 20%;
-    --weather-glass-opacity: 0.06;
-    --weather-glass-border-opacity: 0.10;
-    --weather-gradient-start: 210 50% 88%;
-    --weather-gradient-mid: 210 55% 80%;
-    --weather-gradient-end: 199 50% 72%;
-    --weather-cloud-body: 0 0% 100%;
-    --weather-cloud-puff: 0 0% 98%;
-    --weather-rain: 199 60% 50%;
-    --weather-warm: 30 90% 50%;
-    --weather-cool: 199 70% 45%;
-    --weather-chip-bg: 210 30% 20%;
-  }
-
+@layer base {
   * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    @apply border-border;
   }
-
   body {
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
     font-family: var(--font-body);
   }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-  }
-
-  input,
-  select,
-  textarea {
-    color: rgb(15 23 42);
-  }
-
-  input::placeholder,
-  textarea::placeholder {
-    color: rgb(148 163 184);
-    opacity: 1;
-  }
-
-  select option {
-    color: rgb(15 23 42);
-    background-color: rgb(255 255 255);
-  }
-
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  textarea:-webkit-autofill,
-  textarea:-webkit-autofill:hover,
-  textarea:-webkit-autofill:focus,
-  select:-webkit-autofill,
-  select:-webkit-autofill:hover,
-  select:-webkit-autofill:focus {
-    -webkit-text-fill-color: rgb(15 23 42);
-    box-shadow: 0 0 0 1000px rgb(255 255 255) inset;
-    transition: background-color 9999s ease-out 0s;
+    @apply tracking-tight font-bold;
   }
 }
 
-@keyframes cloudFloat {
-  0%,
-  100% {
-    transform: translateY(0px);
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-[hsl(var(--glass-background))] border border-[hsl(var(--glass-border))];
+    box-shadow: var(--glass-shadow);
   }
-  50% {
-    transform: translateY(-12px);
+  
+  .glass-card {
+    @apply glass rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:scale-[1.01];
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400;
+  }
+
+  .bg-mesh {
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  }
+
+  .bg-mesh-light {
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(253,100%,95%,1) 0, transparent 50%), 
+      radial-gradient(at 50% 0%, hsla(225,100%,92%,1) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(339,100%,95%,1) 0, transparent 50%);
   }
 }
 
-@keyframes rainFall {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px) rotate(12deg);
-  }
-  15% {
-    opacity: 0.75;
-  }
-  85% {
-    opacity: 0.55;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(40px) rotate(12deg);
-  }
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-@keyframes bgRainFall {
-  0% {
-    opacity: 0;
-    transform: translateY(-50px) rotate(12deg);
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(100vh) rotate(12deg);
-  }
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full transition-colors hover:bg-muted-foreground/30;
 }
 
-@keyframes pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-@keyframes orbFloat {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -20px) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 15px) scale(0.95);
-  }
-}
-
-.animate-cloud-float {
-  animation: cloudFloat 6s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.animate-pulse-dot {
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-.animate-orb-float {
-  animation: orbFloat 20s ease-in-out infinite;
-}
-
-.weather-glass {
-  background: hsl(var(--weather-glass) / var(--weather-glass-opacity));
-  border: 1px solid hsl(var(--weather-glass) / var(--weather-glass-border-opacity));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.weather-glass-hover:hover {
-  background: hsl(var(--weather-glass) / 0.13);
-  border-color: hsl(var(--weather-glass) / 0.2);
-}
-
-.weather-page-bg {
-  background: linear-gradient(
-    155deg,
-    hsl(var(--weather-gradient-start)) 0%,
-    hsl(var(--weather-gradient-mid)) 40%,
-    hsl(var(--weather-gradient-end)) 100%
-  );
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

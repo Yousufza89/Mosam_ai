@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const { email, password, name } = (await request.json()) as {
+    const body = await request.json();
+    const { email, password, name } = body as {
       email?: string;
       password?: string;
       name?: string;
@@ -24,6 +24,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
         { status: 400 }
+      );
+    }
+
+    // Test database connection before proceeding
+    try {
+      await prisma.$connect();
+    } catch (dbError) {
+      console.error("Database connection error during signup:", dbError);
+      return NextResponse.json(
+        { error: "Database connection failed. Please try again later." },
+        { status: 503 }
       );
     }
 
@@ -60,11 +71,22 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Signup error:", error);
+    
+    // Check for Prisma specific errors
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: "Cannot reach database server. Please check your network or DB status." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: error.message || "An unexpected error occurred" },
       { status: 500 }
     );
+  } finally {
+    // Optional: we could disconnect but usually in serverless we don't
   }
 }

@@ -3,315 +3,205 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Menu, X, LogOut, User, LayoutDashboard, History, Cloud } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const isLoading = status === "loading";
+  useEffect(() => setMounted(true), []);
+
   const isLoggedIn = status === "authenticated";
-  const isUser = session?.user?.role === "USER";
   const isAdmin = session?.user?.role === "ADMIN";
 
-  const navLinkStyle = (href: string): React.CSSProperties => ({
-    fontSize: "0.78rem",
-    fontWeight: pathname === href ? 700 : 500,
-    letterSpacing: "0.04em",
-    color: pathname === href ? "#ffffff" : "rgba(255,255,255,0.65)",
-    textDecoration: "none",
-    padding: "6px 0",
-    position: "relative",
-    transition: "color 0.2s",
-    borderBottom: pathname === href ? "1.5px solid rgba(255,255,255,0.7)" : "1.5px solid transparent",
-  });
+  const navLinks = [
+    { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard, show: isLoggedIn },
+    { name: "History", href: "/user/history", icon: History, show: isLoggedIn },
+    { name: "Admin", href: "/admin/dashboard", icon: User, show: isAdmin },
+  ].filter(link => link.show);
+
+  if (!mounted) return null;
 
   return (
-    <>
-      <nav style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "rgba(90,159,212,0.30)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.20)",
-        boxShadow: "0 4px 30px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.18) inset",
-      }}>
-        <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 2rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
+    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-90">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+            <Cloud className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+            Mosam.ai
+          </span>
+        </Link>
 
-            {/* ── Logo ── */}
-            <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: "50%",
-                background: "rgba(255,255,255,0.22)",
-                border: "1px solid rgba(255,255,255,0.38)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "1rem",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
-              }}>
-                ◈
-              </div>
-              <span style={{
-                fontFamily: "'Georgia', serif",
-                fontSize: "1.05rem",
-                fontWeight: 700,
-                color: "white",
-                letterSpacing: "-0.01em",
-              }}>
-                Mosam.ai
-              </span>
-            </Link>
-
-            {/* ── Desktop nav ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }} className="desktop-nav">
-
-              {isLoading && (
-                <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.50)", letterSpacing: "0.1em" }}>
-                  ···
-                </span>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex md:items-center md:gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                pathname === link.href ? "text-primary" : "text-muted-foreground"
               )}
+            >
+              <link.icon className="h-4 w-4" />
+              {link.name}
+            </Link>
+          ))}
 
-              {/* Guest links */}
-              {!isLoggedIn && !isLoading && (
-                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                  <Link href="/login" style={navLinkStyle("/login")}>Login</Link>
-                  <Link href="/signup" style={{
-                    display: "inline-flex", alignItems: "center",
-                    borderRadius: "999px",
-                    background: "rgba(255,255,255,0.92)",
-                    color: "#1a4a7a",
-                    padding: "8px 20px",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                    letterSpacing: "0.03em",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                  }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(0,0,0,0.18)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
+          <div className="h-4 w-[1px] bg-border/60 mx-2" />
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background transition-all hover:bg-accent hover:text-accent-foreground"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-[1.2rem] w-[1.2rem] transition-all" />
+            ) : (
+              <Moon className="h-[1.2rem] w-[1.2rem] transition-all" />
+            )}
+            <span className="sr-only">Toggle theme</span>
+          </button>
+
+          {/* Auth Buttons */}
+          {isLoggedIn ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center border border-border">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm font-medium hidden lg:inline-block">
+                  {session?.user?.name}
+                </span>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-100"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Toggle */}
+        <div className="flex items-center gap-4 md:hidden">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-b border-border bg-background md:hidden overflow-hidden"
+          >
+            <div className="container mx-auto space-y-4 px-4 py-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium transition-colors",
+                    pathname === link.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <link.icon className="h-5 w-5" />
+                  {link.name}
+                </Link>
+              ))}
+
+              <div className="h-[1px] w-full bg-border" />
+
+              {isLoggedIn ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-3">
+                    <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center border border-border">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{session?.user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-base font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition-all hover:bg-accent"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20"
                   >
                     Sign Up
                   </Link>
                 </div>
               )}
-
-              {/* User links */}
-              {isUser && (
-                <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
-                  <NavLink href="/user/dashboard" active={pathname === "/user/dashboard"}>Dashboard</NavLink>
-                  <NavLink href="/user/history" active={pathname === "/user/history"}>My History</NavLink>
-                  <NavLink href="/user/profile" active={pathname === "/user/profile"}>Profile</NavLink>
-                  <LogoutButton onClick={() => signOut({ callbackUrl: "/" })} />
-                </div>
-              )}
-
-              {/* Admin links */}
-              {isAdmin && (
-                <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
-                  <NavLink href="/admin/dashboard" active={pathname === "/admin/dashboard"}>Dashboard</NavLink>
-                  <NavLink href="/admin/performance" active={pathname === "/admin/performance"}>Performance</NavLink>
-                  <NavLink href="/admin/all-predictions" active={pathname === "/admin/all-predictions"}>All Predictions</NavLink>
-                  <AdminBadge />
-                  <LogoutButton onClick={() => signOut({ callbackUrl: "/" })} />
-                </div>
-              )}
-
-              {/* User avatar (when logged in) */}
-              {isLoggedIn && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #a8d8ff, #5a9fd4)",
-                    border: "2px solid rgba(255,255,255,0.45)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "0.85rem", fontWeight: 700, color: "white",
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
-                  }}>
-                    {session?.user?.name?.[0]?.toUpperCase() ?? "U"}
-                  </div>
-                  <div style={{ lineHeight: 1.2 }}>
-                    <p style={{ fontSize: "0.72rem", fontWeight: 600, color: "white", margin: 0 }}>
-                      {session?.user?.name ?? "User"}
-                    </p>
-                    <p style={{ fontSize: "0.58rem", color: "rgba(255,255,255,0.50)", margin: 0, textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                      {session?.user?.role}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* ── Mobile hamburger ── */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              style={{
-                display: "none",
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.25)",
-                borderRadius: "10px",
-                padding: "8px 10px",
-                cursor: "pointer",
-                color: "white",
-                fontSize: "1.1rem",
-              }}
-              className="mobile-menu-btn"
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? "✕" : "☰"}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Mobile dropdown ── */}
-        {mobileOpen && (
-          <div style={{
-            borderTop: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(60,120,190,0.45)",
-            backdropFilter: "blur(20px)",
-            padding: "1rem 1.5rem 1.5rem",
-          }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {!isLoggedIn && !isLoading && (
-                <>
-                  <MobileNavLink href="/login" label="Login" onClick={() => setMobileOpen(false)} />
-                  <MobileNavLink href="/signup" label="Sign Up" onClick={() => setMobileOpen(false)} highlight />
-                </>
-              )}
-              {isUser && (
-                <>
-                  <MobileNavLink href="/user/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} active={pathname === "/user/dashboard"} />
-                  <MobileNavLink href="/user/history" label="My History" onClick={() => setMobileOpen(false)} active={pathname === "/user/history"} />
-                  <MobileNavLink href="/user/profile" label="Profile" onClick={() => setMobileOpen(false)} active={pathname === "/user/profile"} />
-                  <button onClick={() => signOut({ callbackUrl: "/" })} style={mobileLogoutStyle}>Logout</button>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <MobileNavLink href="/admin/dashboard" label="Dashboard" onClick={() => setMobileOpen(false)} active={pathname === "/admin/dashboard"} />
-                  <MobileNavLink href="/admin/performance" label="Performance" onClick={() => setMobileOpen(false)} active={pathname === "/admin/performance"} />
-                  <MobileNavLink href="/admin/all-predictions" label="All Predictions" onClick={() => setMobileOpen(false)} active={pathname === "/admin/all-predictions"} />
-                  <button onClick={() => signOut({ callbackUrl: "/" })} style={mobileLogoutStyle}>Logout</button>
-                </>
-              )}
-            </div>
-          </div>
+          </motion.div>
         )}
-      </nav>
-
-      {/* Responsive styles */}
-      <style>{`
-        @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
-        }
-      `}</style>
-    </>
+      </AnimatePresence>
+    </nav>
   );
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link href={href} style={{
-      fontSize: "0.78rem",
-      fontWeight: active ? 700 : 500,
-      letterSpacing: "0.04em",
-      color: active ? "#ffffff" : "rgba(255,255,255,0.65)",
-      textDecoration: "none",
-      paddingBottom: "3px",
-      borderBottom: active ? "1.5px solid rgba(255,255,255,0.75)" : "1.5px solid transparent",
-      transition: "color 0.2s, border-color 0.2s",
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "white"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = active ? "white" : "rgba(255,255,255,0.65)"; }}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function LogoutButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{
-      display: "inline-flex", alignItems: "center", gap: "6px",
-      borderRadius: "999px",
-      border: "1px solid rgba(255,100,100,0.45)",
-      background: "rgba(220,50,50,0.18)",
-      color: "rgba(255,200,200,0.95)",
-      padding: "7px 16px",
-      fontSize: "0.75rem",
-      fontWeight: 600,
-      cursor: "pointer",
-      letterSpacing: "0.03em",
-      backdropFilter: "blur(8px)",
-      transition: "background 0.2s, border-color 0.2s, transform 0.2s",
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(220,50,50,0.32)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(220,50,50,0.18)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
-    >
-      ⏏ Logout
-    </button>
-  );
-}
-
-function AdminBadge() {
-  return (
-    <span style={{
-      fontSize: "0.58rem",
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: "0.2em",
-      color: "rgba(255,220,100,0.9)",
-      border: "1px solid rgba(255,220,100,0.35)",
-      background: "rgba(255,200,50,0.12)",
-      borderRadius: "999px",
-      padding: "3px 10px",
-    }}>
-      Admin
-    </span>
-  );
-}
-
-function MobileNavLink({ href, label, onClick, active, highlight }: {
-  href: string; label: string; onClick: () => void; active?: boolean; highlight?: boolean;
-}) {
-  return (
-    <Link href={href} onClick={onClick} style={{
-      display: "block",
-      padding: "10px 14px",
-      borderRadius: "12px",
-      fontSize: "0.85rem",
-      fontWeight: active ? 700 : 500,
-      textDecoration: "none",
-      color: highlight ? "#1a4a7a" : "white",
-      background: highlight
-        ? "rgba(255,255,255,0.92)"
-        : active
-          ? "rgba(255,255,255,0.18)"
-          : "rgba(255,255,255,0.08)",
-      border: "1px solid rgba(255,255,255,0.18)",
-      transition: "background 0.2s",
-    }}>
-      {label}
-    </Link>
-  );
-}
-
-const mobileLogoutStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: "12px",
-  fontSize: "0.85rem",
-  fontWeight: 600,
-  color: "rgba(255,180,180,0.95)",
-  background: "rgba(220,50,50,0.18)",
-  border: "1px solid rgba(255,100,100,0.30)",
-  cursor: "pointer",
-  textAlign: "left",
-};

@@ -14,6 +14,17 @@ export async function GET() {
       )
     }
 
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during stats:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
     const userId = session.user.id
 
     const now = new Date()
@@ -81,10 +92,10 @@ export async function GET() {
         averageConfidence: avgConfidence._avg.confidenceScore || 0
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("User stats error:", error)
     return NextResponse.json(
-      { error: "Failed to fetch user statistics" },
+      { error: error.message || "Failed to fetch user statistics" },
       { status: 500 }
     )
   }

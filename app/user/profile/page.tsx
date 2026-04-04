@@ -3,6 +3,27 @@
 import { useEffect, useState } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { redirect } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  User, 
+  Mail, 
+  Shield, 
+  Calendar, 
+  Trophy, 
+  TrendingUp, 
+  MapPin, 
+  Settings, 
+  Lock, 
+  Trash2, 
+  AlertTriangle,
+  CheckCircle2,
+  X,
+  Edit2,
+  Save,
+  LogOut,
+  ChevronRight,
+  PieChart
+} from "lucide-react"
 
 type UserInfo = {
   name: string | null
@@ -23,7 +44,6 @@ type UserStats = {
 
 export default function UserProfilePage() {
   const { data: session, status, update } = useSession()
-
   const sessionRole = (session?.user as { role?: string } | undefined)?.role ?? null
 
   if (status === "unauthenticated") {
@@ -58,32 +78,13 @@ export default function UserProfilePage() {
   const [deleteError, setDeleteError] = useState("")
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const getErrorMessage = (error: unknown, fallback: string) => {
-    if (error instanceof Error) return error.message
-    return fallback
-  }
-
   useEffect(() => {
     const fetchStats = async () => {
       setStatsLoading(true)
       setStatsError("")
-
       try {
-        const response = await fetch("/api/user/stats", {
-          credentials: "include"
-        })
-
-        if (!response.ok) {
-          let message = "Failed to fetch statistics"
-          try {
-            const data = await response.json()
-            if (data?.error) message = data.error
-          } catch {
-            // ignore parsing errors
-          }
-          throw new Error(message)
-        }
-
+        const response = await fetch("/api/user/stats")
+        if (!response.ok) throw new Error("Failed to fetch statistics")
         const data = await response.json()
         setStats(data.stats)
         setUserInfo((prev) => ({
@@ -93,426 +94,396 @@ export default function UserProfilePage() {
           role: data.user?.role ?? prev.role,
           createdAt: data.user?.createdAt ?? prev.createdAt,
         }))
-      } catch (err: unknown) {
-        setStatsError(getErrorMessage(err, "Failed to fetch statistics"))
+      } catch (err: any) {
+        setStatsError(err.message || "Failed to fetch statistics")
       } finally {
         setStatsLoading(false)
       }
     }
-
     fetchStats()
   }, [])
 
   const handleSaveProfile = async () => {
-    setUpdateMessage("")
-    setUpdateError("")
-
+    setUpdateMessage(""); setUpdateError("");
     const trimmedName = nameInput.trim()
-    if (!trimmedName) {
-      setUpdateError("Name is required")
-      return
-    }
-
+    if (!trimmedName) { setUpdateError("Name is required"); return; }
     try {
       const response = await fetch("/api/user/update", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmedName })
       })
-
-      if (!response.ok) {
-        let message = "Failed to update profile"
-        try {
-          const data = await response.json()
-          if (data?.error) message = data.error
-        } catch {
-          // ignore parsing errors
-        }
-        throw new Error(message)
-      }
-
+      if (!response.ok) throw new Error("Failed to update profile")
       const data = await response.json()
-      setUserInfo((prev) => ({
-        ...prev,
-        name: data.user?.name ?? trimmedName,
-      }))
+      setUserInfo((prev) => ({ ...prev, name: data.user?.name ?? trimmedName }))
       await update({ name: data.user?.name ?? trimmedName })
       setUpdateMessage("Profile updated successfully")
       setIsEditing(false)
-    } catch (err: unknown) {
-      setUpdateError(getErrorMessage(err, "Failed to update profile"))
+    } catch (err: any) {
+      setUpdateError(err.message || "Failed to update profile")
     }
-  }
-
-  const handleCancelEdit = () => {
-    setNameInput(userInfo.name || "")
-    setUpdateError("")
-    setUpdateMessage("")
-    setIsEditing(false)
   }
 
   const handleChangePassword = async () => {
-    setPasswordMessage("")
-    setPasswordError("")
-
+    setPasswordMessage(""); setPasswordError("");
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("All password fields are required")
-      return
+      setPasswordError("All password fields are required"); return;
     }
-
     if (newPassword.length < 6) {
-      setPasswordError("New password must be at least 6 characters")
-      return
+      setPasswordError("New password must be at least 6 characters"); return;
     }
-
     if (newPassword !== confirmPassword) {
-      setPasswordError("Confirmation password does not match")
-      return
+      setPasswordError("Passwords do not match"); return;
     }
-
-    if (newPassword === currentPassword) {
-      setPasswordError("New password must be different from current password")
-      return
-    }
-
     setPasswordLoading(true)
-
     try {
       const response = await fetch("/api/user/password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          confirmPassword
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
       })
-
-      if (!response.ok) {
-        let message = "Failed to change password"
-        try {
-          const data = await response.json()
-          if (data?.error) message = data.error
-        } catch {
-          // ignore parsing errors
-        }
-        throw new Error(message)
-      }
-
+      if (!response.ok) throw new Error("Failed to change password")
       setPasswordMessage("Password updated successfully")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-    } catch (err: unknown) {
-      setPasswordError(getErrorMessage(err, "Failed to change password"))
-    } finally {
-      setPasswordLoading(false)
-    }
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("")
+    } catch (err: any) {
+      setPasswordError(err.message || "Failed to change password")
+    } finally { setPasswordLoading(false) }
   }
 
   const handleDeleteAccount = async () => {
     setDeleteError("")
-
-    if (!deletePassword) {
-      setDeleteError("Password is required")
-      return
-    }
-
-    if (!deleteConfirm) {
-      setDeleteError("Please confirm you understand this action is permanent")
-      return
-    }
-
-    if (!confirm("This will permanently delete your account. Continue?")) {
-      return
-    }
-
+    if (!deletePassword) { setDeleteError("Password is required"); return; }
+    if (!deleteConfirm) { setDeleteError("Please confirm deletion"); return; }
+    if (!confirm("This will permanently delete your account. Continue?")) return;
     setDeleteLoading(true)
-
     try {
       const response = await fetch("/api/user/delete", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: deletePassword })
       })
-
-      if (!response.ok) {
-        let message = "Failed to delete account"
-        try {
-          const data = await response.json()
-          if (data?.error) message = data.error
-        } catch {
-          // ignore parsing errors
-        }
-        throw new Error(message)
-      }
-
-      await signOut({ callbackUrl: "/" })
-    } catch (err: unknown) {
-      setDeleteError(getErrorMessage(err, "Failed to delete account"))
-    } finally {
-      setDeleteLoading(false)
-    }
-  }
-
-  const formatDate = (value?: string | null) => {
-    if (!value) return ""
-    return new Date(value).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric"
-    })
+      if (!response.ok) throw new Error("Failed to delete account")
+      signOut({ callbackUrl: "/" })
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete account")
+    } finally { setDeleteLoading(false) }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">User Profile</h1>
-          <p className="text-gray-600">Manage your account information and preferences</p>
-        </div>
-
-        {/* Profile Information */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-blue-600 hover:text-blue-700 font-semibold"
-              >
-                Edit
-              </button>
-            )}
+    <div className="min-h-[calc(100vh-4rem)] bg-background relative overflow-hidden pb-20">
+      <div className="absolute top-0 left-0 w-full h-full bg-mesh-light dark:bg-mesh opacity-10 -z-10" />
+      
+      <div className="container mx-auto px-4 pt-8 sm:pt-12 max-w-6xl relative z-10">
+        {/* Profile Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12 flex flex-col md:flex-row items-center gap-8 glass p-8 rounded-[2.5rem]"
+        >
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-[30px] rounded-full group-hover:bg-primary/30 transition-all" />
+            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-purple-600 p-1">
+              <div className="h-full w-full rounded-full bg-background flex items-center justify-center overflow-hidden">
+                <User className="h-16 w-16 text-primary" />
+              </div>
+            </div>
+            <button className="absolute bottom-1 right-1 h-9 w-9 rounded-full bg-primary text-primary-foreground border-4 border-background flex items-center justify-center hover:scale-110 transition-all shadow-lg">
+              <Edit2 className="h-4 w-4" />
+            </button>
           </div>
 
-          {updateError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {updateError}
+          <div className="flex-1 text-center md:text-left">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-2">
+              <h1 className="text-4xl font-black tracking-tight">{userInfo.name}</h1>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 self-center md:self-auto">
+                {userInfo.role || 'Member'}
+              </span>
             </div>
-          )}
-          {updateMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              {updateMessage}
+            <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2 font-medium">
+              <Mail className="h-4 w-4" /> {userInfo.email}
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-secondary/30 px-3 py-1.5 rounded-lg border border-border/50">
+                <Calendar className="h-3.5 w-3.5" />
+                Joined {userInfo.createdAt ? new Date(userInfo.createdAt).toLocaleDateString() : 'Recently'}
+              </div>
+              <button 
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex items-center gap-2 text-xs font-bold text-destructive hover:text-destructive-foreground hover:bg-destructive px-3 py-1.5 rounded-lg border border-destructive/20 transition-all"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Logout
+              </button>
             </div>
-          )}
+          </div>
+        </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-gray-500">Name</p>
-              {isEditing ? (
-                <input
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2"
-                />
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Stats Column */}
+          <div className="lg:col-span-4 space-y-6">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass-card"
+            >
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                Your Impact
+              </h3>
+              
+              {statsLoading ? (
+                <div className="space-y-4 animate-pulse">
+                  {[1, 2, 3].map(i => <div key={i} className="h-16 bg-secondary/30 rounded-2xl" />)}
+                </div>
+              ) : stats ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Total Predictions</p>
+                    <p className="text-3xl font-black">{stats.totalPredictions}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Avg Confidence</p>
+                    <p className="text-3xl font-black text-emerald-500">{stats.averageConfidence}%</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Favorite City</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      <p className="text-xl font-black">{stats.mostPredictedCity || 'None'}</p>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <p className="text-lg font-semibold text-gray-800">
-                  {userInfo.name || "Not set"}
-                </p>
+                <p className="text-sm text-muted-foreground italic">No stats available yet.</p>
               )}
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Email</p>
-              <p className="text-lg font-semibold text-gray-800">
-                {userInfo.email || "Not available"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Role</p>
-              <p className="text-lg font-semibold text-gray-800">
-                {userInfo.role || "USER"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Member Since</p>
-              <p className="text-lg font-semibold text-gray-800">
-                {userInfo.createdAt ? formatDate(userInfo.createdAt) : "Not available"}
-              </p>
-            </div>
-            {userInfo.lastLogin && (
-              <div>
-                <p className="text-sm text-gray-500">Last Login</p>
-                <p className="text-lg font-semibold text-gray-800">
-                  {formatDate(userInfo.lastLogin)}
-                </p>
-              </div>
-            )}
-          </div>
+            </motion.div>
 
-          {isEditing && (
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={handleSaveProfile}
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
-              >
-                Save Changes
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="glass-card bg-primary/5 border-primary/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <PieChart className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-bold">Pro Features</h4>
+                  <p className="text-xs text-muted-foreground">Unlock deeper insights</p>
+                </div>
+              </div>
+              <button className="w-full bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl hover:scale-105 transition-all shadow-lg shadow-primary/20">
+                Upgrade to Pro
               </button>
-              <button
-                onClick={handleCancelEdit}
-                className="bg-gray-100 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
+            </motion.div>
+          </div>
 
-        {/* Statistics */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Your Statistics</h2>
+          {/* Settings Column */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Account Settings */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  Account Details
+                </h3>
+                {!isEditing ? (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="text-sm font-bold text-primary hover:underline"
+                  >
+                    Edit Profile
+                  </button>
+                ) : (
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="text-sm font-bold text-muted-foreground hover:text-foreground"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveProfile}
+                      className="text-sm font-bold text-primary hover:underline"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                )}
+              </div>
 
-          {statsError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {statsError}
-            </div>
-          )}
-
-          {statsLoading && (
-            <p className="text-gray-600">Loading statistics...</p>
-          )}
-
-          {!statsLoading && stats && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-gray-50 rounded-lg p-5">
-                  <p className="text-sm text-gray-500">Total Predictions</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.totalPredictions}</p>
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Full Name</label>
+                  {isEditing ? (
+                    <input 
+                      type="text"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
+                    />
+                  ) : (
+                    <div className="w-full bg-secondary/10 border border-transparent rounded-xl px-4 py-3 font-bold text-foreground/80">
+                      {userInfo.name}
+                    </div>
+                  )}
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5">
-                  <p className="text-sm text-gray-500">This Week</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.predictionsThisWeek}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-5">
-                  <p className="text-sm text-gray-500">This Month</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.predictionsThisMonth}</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Email Address</label>
+                  <div className="w-full bg-secondary/10 border border-transparent rounded-xl px-4 py-3 font-bold text-muted-foreground/60 cursor-not-allowed">
+                    {userInfo.email}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-blue-50 rounded-lg p-5">
-                  <p className="text-sm text-gray-600">Most Predicted City</p>
-                  <p className="text-xl font-semibold text-gray-800">
-                    {stats.mostPredictedCity
-                      ? `${stats.mostPredictedCity} (${stats.mostPredictedCityCount})`
-                      : "No predictions yet"}
-                  </p>
+              <AnimatePresence>
+                {updateMessage && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 p-4 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-sm font-bold border border-emerald-500/20">
+                    <CheckCircle2 className="h-4 w-4" /> {updateMessage}
+                  </motion.div>
+                )}
+                {updateError && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl flex items-center gap-2 text-sm font-bold border border-destructive/20">
+                    <AlertTriangle className="h-4 w-4" /> {updateError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Password Security */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="glass-card"
+            >
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                Security
+              </h3>
+
+              <div className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Current Password</label>
+                    <input 
+                      type="password"
+                      placeholder="••••••••"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
+                    />
+                  </div>
+                  <div className="hidden sm:block" />
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
+                    <input 
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm New Password</label>
+                    <input 
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold"
+                    />
+                  </div>
                 </div>
-                <div className="bg-green-50 rounded-lg p-5">
-                  <p className="text-sm text-gray-600">Average Confidence</p>
-                  <p className="text-xl font-semibold text-gray-800">
-                    {stats.averageConfidence ? `${stats.averageConfidence.toFixed(1)}%` : "0%"}
-                  </p>
+
+                <div className="flex justify-end">
+                  <button 
+                    onClick={handleChangePassword}
+                    disabled={passwordLoading}
+                    className="bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                  >
+                    {passwordLoading ? 'Updating...' : 'Update Password'}
+                  </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Change Password */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Change Password</h2>
+              <AnimatePresence>
+                {passwordMessage && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 p-4 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 text-sm font-bold border border-emerald-500/20">
+                    <CheckCircle2 className="h-4 w-4" /> {passwordMessage}
+                  </motion.div>
+                )}
+                {passwordError && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-6 p-4 bg-destructive/10 text-destructive rounded-xl flex items-center gap-2 text-sm font-bold border border-destructive/20">
+                    <AlertTriangle className="h-4 w-4" /> {passwordError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
-          {passwordError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {passwordError}
-            </div>
-          )}
-          {passwordMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              {passwordMessage}
-            </div>
-          )}
+            {/* Danger Zone */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass-card border-destructive/20 bg-destructive/5"
+            >
+              <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </h3>
+              <p className="text-sm text-muted-foreground mb-8">
+                Once you delete your account, there is no going back. Please be certain.
+              </p>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div>
-              <label className="text-sm text-gray-600">Current Password</label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-600">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-600">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2"
-              />
-            </div>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="confirm-delete"
+                      checked={deleteConfirm}
+                      onChange={(e) => setDeleteConfirm(e.target.checked)}
+                      className="h-4 w-4 rounded border-destructive text-destructive focus:ring-destructive"
+                    />
+                    <label htmlFor="confirm-delete" className="text-sm font-bold text-muted-foreground cursor-pointer">
+                      I understand that this action is permanent and irreversible.
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm with Password</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <input 
+                        type="password"
+                        placeholder="Enter your password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        className="flex-1 bg-background border border-destructive/20 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-destructive/20 focus:border-destructive transition-all font-bold"
+                      />
+                      <button 
+                        onClick={handleDeleteAccount}
+                        disabled={deleteLoading || !deleteConfirm || !deletePassword}
+                        className="bg-destructive text-destructive-foreground font-bold px-8 py-3 rounded-xl hover:scale-105 transition-all shadow-lg shadow-destructive/20 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {deleteLoading ? 'Deleting...' : 'Delete Account'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {deleteError && (
+                  <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm font-bold border border-destructive/20">
+                    {deleteError}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
-
-          <button
-            onClick={handleChangePassword}
-            disabled={passwordLoading}
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {passwordLoading ? "Updating..." : "Change Password"}
-          </button>
-        </div>
-
-        {/* Danger Zone */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-red-200">
-          <h2 className="text-2xl font-bold text-red-700 mb-4">⚠️ Danger Zone</h2>
-          <p className="text-gray-600 mb-4">
-            Deleting your account will permanently remove all your data and predictions.
-            This action cannot be undone.
-          </p>
-
-          {deleteError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {deleteError}
-            </div>
-          )}
-
-          <div className="max-w-md space-y-4">
-            <div>
-              <label className="text-sm text-gray-600">Confirm Password</label>
-              <input
-                type="password"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                checked={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.checked)}
-              />
-              I understand this action is permanent
-            </label>
-          </div>
-
-          <button
-            onClick={handleDeleteAccount}
-            disabled={deleteLoading}
-            className="mt-6 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400"
-          >
-            {deleteLoading ? "Deleting..." : "Delete My Account"}
-          </button>
         </div>
       </div>
     </div>

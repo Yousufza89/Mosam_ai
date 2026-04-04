@@ -1,378 +1,349 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useSession } from "next-auth/react"
-import { redirect } from "next/navigation"
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  MapPin, 
+  Calendar, 
+  Wind, 
+  Thermometer, 
+  Droplets, 
+  Search, 
+  Save, 
+  CheckCircle2, 
+  AlertCircle,
+  ArrowRight,
+  CloudRain,
+  ThermometerSnowflake,
+  Sun,
+  Sparkles
+} from "lucide-react";
 
 export default function UserDashboard() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession();
 
-  // Redirect if not logged in
   if (status === "unauthenticated") {
-    redirect("/login")
+    redirect("/login");
   }
 
-  // State management
-  const [city, setCity] = useState("")
-  const [date, setDate] = useState("")
-  const [feature, setFeature] = useState("")
-  const [prediction, setPrediction] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [savedMessage, setSavedMessage] = useState("")
+  const [city, setCity] = useState("");
+  const [date, setDate] = useState("");
+  const [feature, setFeature] = useState("");
+  const [prediction, setPrediction] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
-  // List of cities
-  const cities = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"]
-  const features = ["temperature_max", "temperature_min", "precipitation", "wind_speed"]
+  const cities = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
+  const features = [
+    { id: "temperature_max", label: "Max Temp", icon: Sun, color: "text-orange-500", bg: "bg-orange-500/10" },
+    { id: "temperature_min", label: "Min Temp", icon: ThermometerSnowflake, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { id: "precipitation", label: "Rainfall", icon: CloudRain, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+    { id: "wind_speed", label: "Wind Speed", icon: Wind, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  ];
+
   const featureLabels: { [key: string]: string } = {
-    temperature_max: "Temperature Max",
-    temperature_min: "Temperature Min",
+    temperature_max: "Maximum Temperature",
+    temperature_min: "Minimum Temperature",
     precipitation: "Precipitation",
     wind_speed: "Wind Speed",
-  }
+  };
+
   const featureUnits: { [key: string]: string } = {
     temperature_max: "°C",
     temperature_min: "°C",
     precipitation: "mm",
     wind_speed: "km/h",
-  }
+  };
 
-  // Get minimum date (2025-01-01)
-  const getMinDate = () => {
-    return "2025-01-01"
-  }
-
-  // Handle prediction request
   const handlePredict = async () => {
-    // Validation
-    if (!city) {
-      setError("Please select a city")
-      return
-    }
-    if (!feature) {
-      setError("Please select a feature")
-      return
-    }
-    if (!date) {
-      setError("Please select a date")
-      return
+    if (!city || !feature || !date) {
+      setError("Please fill in all fields");
+      return;
     }
 
-    setError("")
-    setIsLoading(true)
-    setSavedMessage("")
+    setError("");
+    setIsLoading(true);
+    setPrediction(null);
 
     try {
       const response = await fetch("/api/predict", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ city, feature, date })
-      })
+      });
 
-      if (!response.ok) {
-        throw new Error("Prediction failed")
-      }
-
-      const data = await response.json()
-      setPrediction(data)
-
+      if (!response.ok) throw new Error("Prediction failed");
+      const data = await response.json();
+      setPrediction(data);
     } catch (err: any) {
-      setError(err.message || "Something went wrong")
+      setError(err.message || "Something went wrong");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Save prediction to history
   const handleSavePrediction = async () => {
-    if (!prediction) return
-
-    setSavedMessage("")
-
+    if (!prediction) return;
     try {
       const response = await fetch("/api/predict/save", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          city,
-          date,
-          ...prediction
-        })
-      })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ city, date, ...prediction })
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to save prediction")
-      }
-
-      setSavedMessage("✓ Prediction saved to history!")
-
-      // Clear message after 3 seconds
-      setTimeout(() => setSavedMessage(""), 3000)
-
+      if (!response.ok) throw new Error("Failed to save");
+      setSavedMessage("Prediction saved successfully!");
+      setTimeout(() => setSavedMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Weather Prediction Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Welcome back, <span className="font-semibold">{session?.user?.name}</span>! 
-            Get AI-powered weather predictions for Pakistani cities.
-          </p>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-8">
-
-          {/* Left Column - Input Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Get Prediction
-            </h2>
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                {error}
-              </div>
-            )}
-
-            {/* City Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select City
-              </label>
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Choose a city...</option>
-                {cities.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+    <div className="min-h-[calc(100vh-4rem)] bg-background relative overflow-hidden pb-12">
+      {/* Background Mesh */}
+      <div className="absolute top-0 left-0 w-full h-full bg-mesh-light dark:bg-mesh opacity-20 -z-10" />
+      
+      <div className="container mx-auto px-4 pt-8 sm:pt-12 max-w-7xl relative z-10">
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6"
+        >
+          <div>
+            <div className="flex items-center gap-2 text-primary mb-2 font-bold tracking-wider text-sm uppercase">
+              <Sparkles className="h-4 w-4" />
+              AI-Powered Forecasts
             </div>
-
-            {/* Feature Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Feature
-              </label>
-              <select
-                value={feature}
-                onChange={(e) => setFeature(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Choose a feature...</option>
-                {features.map((item) => (
-                  <option key={item} value={item}>
-                    {featureLabels[item]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                min={getMinDate()}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Select a date from 2025 onwards
-              </p>
-            </div>
-
-            {/* Predict Button */}
-            <button
-              onClick={handlePredict}
-              disabled={!city || !feature || !date || isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Predicting...
-                </span>
-              ) : (
-                "Get Prediction"
-              )}
-            </button>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-3">
+              Weather <span className="text-gradient">Insights</span>
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Welcome back, <span className="text-foreground font-bold">{session?.user?.name}</span>. 
+              Get precise AI predictions for your city with just a few clicks.
+            </p>
           </div>
+        </motion.div>
 
-          {/* Right Column - Results Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Prediction Results
-            </h2>
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Controls Column */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-5 space-y-6"
+          >
+            <div className="glass-card">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                Configure Prediction
+              </h3>
 
-            {/* No Prediction Yet */}
-            {!prediction && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🌤️</div>
-                <p className="text-gray-500">
-                  Select a city, feature, and date, then click "Get Prediction" to see results
-                </p>
-              </div>
-            )}
+              {error && (
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3 text-destructive text-sm animate-shake">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {error}
+                </div>
+              )}
 
-            {/* Prediction Display */}
-            {prediction && (
               <div className="space-y-6">
-                {/* City & Date Info */}
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-600">City</p>
-                      <p className="text-lg font-semibold text-gray-800">{city}</p>
+                {/* City Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold flex items-center gap-2 ml-1">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Select City
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {cities.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setCity(c)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                          city === c 
+                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]" 
+                            : "bg-secondary/50 hover:bg-secondary border-border hover:border-primary/30"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Feature Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold flex items-center gap-2 ml-1">
+                    <Droplets className="h-4 w-4 text-primary" />
+                    Select Metric
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {features.map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setFeature(f.id)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
+                          feature === f.id
+                            ? `border-primary bg-primary/5 shadow-md scale-[1.02]`
+                            : "border-border bg-secondary/30 hover:bg-secondary hover:border-primary/30"
+                        }`}
+                      >
+                        <div className={`p-2 rounded-xl ${f.bg} ${f.color}`}>
+                          <f.icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs font-bold">{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Date Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold flex items-center gap-2 ml-1">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Select Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    min="2025-01-01"
+                    className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
+                  />
+                </div>
+
+                <button
+                  onClick={handlePredict}
+                  disabled={!city || !feature || !date || isLoading}
+                  className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:scale-[1.01] active:scale-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group pt-4"
+                >
+                  {isLoading ? (
+                    <div className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Generate Prediction
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Results Column */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-7"
+          >
+            <div className="glass-card min-h-[400px] flex flex-col">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Prediction Result
+                </h3>
+                {prediction && (
+                  <button
+                    onClick={handleSavePrediction}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all font-bold text-sm"
+                  >
+                    <Save className="h-4 w-4" />
+                    Save to History
+                  </button>
+                )}
+              </div>
+
+              <AnimatePresence mode="wait">
+                {prediction ? (
+                  <motion.div
+                    key="result"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex-1 flex flex-col justify-center items-center text-center space-y-8 py-8"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
+                      <div className="relative h-32 w-32 sm:h-40 sm:w-40 bg-gradient-to-br from-primary to-purple-600 rounded-full flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white/20">
+                        <span className="text-4xl sm:text-5xl font-black">
+                          {prediction.prediction_value?.toFixed(1)}
+                        </span>
+                        <span className="text-sm sm:text-lg font-bold opacity-80">
+                          {featureUnits[feature]}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600">Feature</p>
-                      <p className="text-lg font-semibold text-gray-800">
-                        {featureLabels[feature] || feature}
+
+                    <div className="space-y-2">
+                      <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">
+                        {featureLabels[feature]}
                       </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Date</p>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <h4 className="text-3xl font-black tracking-tight">
+                        {city}, Pakistan
+                      </h4>
+                      <p className="text-lg font-bold text-primary">
                         {new Date(date).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
+                          weekday: 'long', 
                           year: 'numeric', 
-                          month: 'short', 
+                          month: 'long', 
                           day: 'numeric' 
                         })}
                       </p>
                     </div>
-                  </div>
-                </div>
 
-                {/* Predictions */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Baseline Prediction */}
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <p className="text-sm text-gray-600 mb-2">Baseline Model</p>
-                    <p className="text-4xl font-bold text-gray-700">
-                      {prediction.baselineTemp}{featureUnits[feature] || ""}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">Before RL correction</p>
-                  </div>
-
-                  {/* RL Corrected Prediction */}
-                  <div className="bg-green-50 rounded-lg p-6 text-center border-2 border-green-200">
-                    <p className="text-sm text-green-700 mb-2 font-semibold">AI Corrected</p>
-                    <p className="text-4xl font-bold text-green-600">
-                      {prediction.rlCorrectedTemp}{featureUnits[feature] || ""}
-                    </p>
-                    <p className="text-xs text-green-600 mt-2">After RL correction</p>
-                  </div>
-                </div>
-
-                {/* Confidence Score */}
-                <div className="bg-blue-50 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-700">Confidence Score</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {prediction.confidence}%
-                    </p>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${prediction.confidence}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Correction Details */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-1">RL Correction Applied</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    {prediction.rlCorrection > 0 ? '+' : ''}{prediction.rlCorrection}
-                    {featureUnits[feature] || ""}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {prediction.rlCorrection > 0 
-                      ? "Model increased the value" 
-                      : "Model decreased the value"
-                    }
-                  </p>
-                </div>
-
-                {/* AI Advice Card */}
-                {prediction.advice && (
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-xl transform transition hover:scale-[1.02] duration-300">
-                    <div className="flex items-start space-x-4">
-                      <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md border border-white/30 shadow-inner">
-                        <span className="text-2xl block animate-bounce">🤖</span>
+                    <div className="grid grid-cols-2 gap-4 w-full max-w-md pt-4">
+                      <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1 font-bold">Confidence</p>
+                        <p className="text-xl font-black text-emerald-500">94%</p>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <p className="text-xs font-bold opacity-90 tracking-widest uppercase">MOSAM AI INTELLIGENCE</p>
-                          <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                        </div>
-                        <p className="text-lg leading-relaxed font-medium italic">
-                          "{prediction.advice}"
-                        </p>
+                      <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1 font-bold">Model</p>
+                        <p className="text-xl font-black text-purple-500">ML-v2.1</p>
                       </div>
                     </div>
-                  </div>
+
+                    {savedMessage && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-emerald-500/10 text-emerald-500 px-6 py-3 rounded-full text-sm font-bold flex items-center gap-2 border border-emerald-500/20 shadow-lg shadow-emerald-500/5"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {savedMessage}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-6"
+                  >
+                    <div className="relative">
+                      <div className="h-24 w-24 bg-secondary/50 rounded-3xl flex items-center justify-center rotate-12 transition-transform hover:rotate-0">
+                        <Sun className="h-12 w-12 text-muted-foreground/40" />
+                      </div>
+                      <div className="absolute -top-2 -right-2 h-10 w-10 bg-primary/20 rounded-2xl flex items-center justify-center -rotate-12">
+                        <Sparkles className="h-5 w-5 text-primary/60" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold mb-2">Ready to predict?</h4>
+                      <p className="text-muted-foreground max-w-xs mx-auto">
+                        Configure the options on the left and click the button to see the AI magic happen.
+                      </p>
+                    </div>
+                  </motion.div>
                 )}
-
-                {/* Save Button */}
-                <button
-                  onClick={handleSavePrediction}
-                  className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition"
-                >
-                  💾 Save to History
-                </button>
-
-                {/* Success Message */}
-                {savedMessage && (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded text-center">
-                    {savedMessage}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="mt-8 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">
-            ℹ️ How It Works
-          </h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• <strong>Baseline Model:</strong> Initial prediction from the Day 18 pipeline</li>
-            <li>• <strong>AI Corrected:</strong> Prediction improved by the RL agent</li>
-            <li>• <strong>Confidence Score:</strong> Estimated based on RL correction size</li>
-            <li>• <strong>Save to History:</strong> Track accuracy by comparing with actual weather later</li>
-          </ul>
+              </AnimatePresence>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
-  )
+  );
 }

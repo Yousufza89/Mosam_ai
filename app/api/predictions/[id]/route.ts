@@ -18,6 +18,17 @@ export async function DELETE(
       )
     }
 
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during delete:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
     const resolvedParams = await params
     let predictionId = resolvedParams?.id
 
@@ -34,13 +45,6 @@ export async function DELETE(
       return NextResponse.json(
         { error: "Prediction id is required" },
         { status: 400 }
-      )
-    }
-
-    if (!session.user.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
       )
     }
 
@@ -71,10 +75,10 @@ export async function DELETE(
       message: "Prediction deleted successfully"
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Delete prediction error:", error)
     return NextResponse.json(
-      { error: "Failed to delete prediction" },
+      { error: error.message || "Failed to delete prediction" },
       { status: 500 }
     )
   }

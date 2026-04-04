@@ -15,6 +15,17 @@ export async function GET(request: Request) {
       )
     }
 
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during fetch:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url)
     const city = searchParams.get("city")
@@ -46,10 +57,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(predictions)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Fetch predictions error:", error)
     return NextResponse.json(
-      { error: "Failed to fetch predictions" },
+      { error: error.message || "Failed to fetch predictions" },
       { status: 500 }
     )
   }

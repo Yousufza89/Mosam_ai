@@ -15,7 +15,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const { currentPassword, newPassword, confirmPassword } = await request.json()
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during password change:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
+      )
+    }
+
+    const body = await request.json()
+    const { currentPassword, newPassword, confirmPassword } = body
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       return NextResponse.json(
@@ -75,10 +87,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: "Password updated successfully"
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Change password error:", error)
     return NextResponse.json(
-      { error: "Failed to change password" },
+      { error: error.message || "Failed to change password" },
       { status: 500 }
     )
   }

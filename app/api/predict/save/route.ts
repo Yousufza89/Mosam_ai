@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     }
 
     // Get prediction data
+    const body = await request.json()
     const {
       city,
       date,
@@ -23,13 +24,24 @@ export async function POST(request: Request) {
       rlCorrectedTemp,
       confidence,
       modelVersion
-    } = await request.json()
+    } = body
 
     // Validate required fields
-    if (!city || !date || !baselineTemp || !rlCorrectedTemp || !confidence) {
+    if (!city || !date || baselineTemp === undefined || rlCorrectedTemp === undefined || confidence === undefined) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
+      )
+    }
+
+    // Test database connection
+    try {
+      await prisma.$connect()
+    } catch (dbError) {
+      console.error("Database connection error during save:", dbError)
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 503 }
       )
     }
 
@@ -39,11 +51,10 @@ export async function POST(request: Request) {
         userId: session.user.id,
         city,
         predictionDate: new Date(date),
-        baselineTemp,
-        rlCorrectedTemp,
-        confidenceScore: confidence,
+        baselineTemp: parseFloat(baselineTemp),
+        rlCorrectedTemp: parseFloat(rlCorrectedTemp),
+        confidenceScore: parseFloat(confidence),
         modelVersion: modelVersion || `${city.toLowerCase()}_v1`,
-        // actualTemp and accuracy will be filled later
       }
     })
 
@@ -52,10 +63,10 @@ export async function POST(request: Request) {
       id: savedPrediction.id
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Save prediction error:", error)
     return NextResponse.json(
-      { error: "Failed to save prediction" },
+      { error: error.message || "Failed to save prediction" },
       { status: 500 }
     )
   }
