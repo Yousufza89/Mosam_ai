@@ -17,17 +17,18 @@ export async function POST(request: Request) {
 
     // Get prediction data
     const body = await request.json()
-    const {
-      city,
-      date,
-      baselineTemp,
-      rlCorrectedTemp,
-      confidence,
-      modelVersion
-    } = body
+    
+    // Support both camelCase and snake_case field names from frontend
+    const city = body.city
+    const date = body.date
+    const baselineTemp = body.baselineTemp ?? body.baseline_prediction
+    const rlCorrectedTemp = body.rlCorrectedTemp ?? body.prediction_value ?? body.final_prediction
+    const confidence = body.confidence
+    const modelVersion = body.modelVersion ?? "AI-v2.1"
 
     // Validate required fields
     if (!city || !date || baselineTemp === undefined || rlCorrectedTemp === undefined || confidence === undefined) {
+      console.error("Missing required fields in save API:", { city, date, baselineTemp, rlCorrectedTemp, confidence })
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -51,10 +52,10 @@ export async function POST(request: Request) {
         userId: session.user.id,
         city,
         predictionDate: new Date(date),
-        baselineTemp: parseFloat(baselineTemp),
-        rlCorrectedTemp: parseFloat(rlCorrectedTemp),
-        confidenceScore: parseFloat(confidence),
-        modelVersion: modelVersion || `${city.toLowerCase()}_v1`,
+        baselineTemp: parseFloat(String(baselineTemp)),
+        rlCorrectedTemp: parseFloat(String(rlCorrectedTemp)),
+        confidenceScore: parseFloat(String(confidence)),
+        modelVersion: modelVersion,
       }
     })
 
