@@ -241,7 +241,12 @@ def make_baseline_prediction(df, city, feature, pred_date, features_dict):
     cache_key = f"{city}_{feature}"
     model_data = models_cache.get(cache_key)
     
-    if model_data and model_data['model']:
+    print(f"  [make_baseline] cache_key={cache_key}, model_data exists={model_data is not None}")
+    
+    if model_data:
+        print(f"  [make_baseline] model type={type(model_data.get('model'))}, has predict={hasattr(model_data.get('model'), 'predict')}")
+    
+    if model_data and model_data.get('model') is not None and hasattr(model_data['model'], 'predict'):
         try:
             # Prepare feature vector in exact order expected by model
             X = []
@@ -260,6 +265,8 @@ def make_baseline_prediction(df, city, feature, pred_date, features_dict):
             return float(prediction), True  # True = used real model
         except Exception as e:
             print(f"  ❌ Cached model prediction failed for {city}/{feature}: {e}")
+            import traceback
+            traceback.print_exc()
             # Fall through to fallback
     
     # Fallback: Use seasonal patterns and trends
