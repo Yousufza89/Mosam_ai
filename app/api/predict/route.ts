@@ -59,28 +59,55 @@ export async function POST(request: Request) {
     // Call ML service with timeout
     let result;
     let steps = [];
-    let featureSummary = {};
+    let featureSummary: any = {};
     
     try {
-      const mlServiceUrl = process.env.ML_SERVICE_URL || "http://localhost:8000"
+      // Force localhost for dev environment
+      const mlServiceUrl = "http://127.0.0.1:8000"
       
-      // Check if ML service is healthy first
-      const healthCheck = await fetch(`${mlServiceUrl}/health`, { 
-        method: "GET",
-        signal: AbortSignal.timeout(3000)
-      }).catch(() => null);
+      console.log(`[API] Connecting to ML service at: ${mlServiceUrl}`);
+      
+      // Simple ping test first
+      try {
+        const ping = await fetch(`${mlServiceUrl}/`, { 
+          method: "GET",
+          signal: AbortSignal.timeout(3000)
+        });
+        console.log(`[API] Ping test: ${ping.status}`);
+      } catch (e: any) {
+        console.error(`[API] Ping failed: ${e.message}`);
+      }
+      
+      // Check if ML service is healthy
+      let healthCheck;
+      try {
+        healthCheck = await fetch(`${mlServiceUrl}/health`, { 
+          method: "GET",
+          signal: AbortSignal.timeout(5000)
+        });
+        console.log("[API] Health check status:", healthCheck.status);
+      } catch (healthError: any) {
+        console.error("[API] Health check failed:", healthError.message);
+        throw new Error(`ML service not reachable at ${mlServiceUrl} - ${healthError.message}`);
+      }
       
       if (healthCheck?.ok) {
         const health = await healthCheck.json();
         console.log("ML Service Health:", health);
+      } else {
+        console.warn("Health check failed, attempting prediction anyway");
       }
       
       // Make prediction request
+      console.log(`Making prediction request: ${city}/${feature}/${date}`);
       const mlResponse = await fetch(`${mlServiceUrl}/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ city, feature, date }),
-        signal: AbortSignal.timeout(30000) // 30 second timeout
+        signal: AbortSignal.timeout(30000)
       });
 
       if (mlResponse.ok) {
@@ -92,6 +119,17 @@ export async function POST(request: Request) {
         };
         steps = mlResult.steps || [];
         featureSummary = mlResult.feature_summary || {};
+        
+        // Log model usage for debugging
+        console.log("ML Prediction Result:", {
+          city,
+          feature,
+          date,
+          baseline: mlResult.baseline_prediction,
+          final: mlResult.final_prediction,
+          modelVersion: mlResult.model_version,
+          usingTrainedModels: mlResult.feature_summary?.using_trained_models
+        });
       } else {
         const errorData = await mlResponse.json().catch(() => ({}));
         console.warn("ML service error:", errorData.detail || mlResponse.statusText);
@@ -164,10 +202,10 @@ export async function POST(request: Request) {
       rlCorrection: rlCorrection > 0 ? `+${rlCorrection.toFixed(2)}` : rlCorrection.toFixed(2),
       prediction_value: Number(rlCorrectedTemp.toFixed(2)),
       confidence: confidence.toFixed(1),
-      modelVersion: "AI-v3.0",
+      modelVersion: featureSummary?.baseline_model_type || "AI-v3.0",
       steps,
       featureSummary,
-      usingRealModel: steps.length > 0 && steps[0].status === "complete"
+      usingRealModel: featureSummary?.using_trained_models || false
     })
 
   } catch (error: any) {
