@@ -65,7 +65,13 @@ FEATURES = ['temperature_max', 'temperature_min', 'precipitation', 'wind_speed']
 
 # Global data storage
 df_global = None
-models_cache = {}
+models_cache = {}  # Cache for loaded models
+
+# Model availability tracking
+model_availability = {
+    'baseline': {},  # city -> {feature: bool}
+    'rl': {}  # city -> bool
+}
 
 # ============================================================================
 # DATA MODELS
@@ -199,10 +205,16 @@ def load_trained_model(city, feature):
     """Load a trained model from disk if available"""
     model_path = get_model_path(city, feature)
     
-    if not model_path or not HAS_LIGHTGBM:
+    if not HAS_LIGHTGBM:
+        print(f"  ⚠️  LightGBM not available, cannot load {city}/{feature}")
+        return None
+    
+    if not model_path:
+        print(f"  ⚠️  Model file not found for {city}/{feature}")
         return None
     
     try:
+        print(f"  ✓ Loading model from: {model_path}")
         with open(model_path, 'rb') as f:
             model_data = pickle.load(f)
         
@@ -214,22 +226,24 @@ def load_trained_model(city, feature):
             model = model_data
             feature_names = model.feature_name_ if hasattr(model, 'feature_name_') else []
         
+        print(f"  ✓ Model loaded: {type(model).__name__} with {len(feature_names)} features")
         return {'model': model, 'feature_names': feature_names}
     except Exception as e:
-        print(f"Warning: Failed to load model for {city}/{feature}: {e}")
+        print(f"  ❌ Failed to load model for {city}/{feature}: {e}")
         return None
 
 def make_baseline_prediction(df, city, feature, pred_date, features_dict):
     """
-    Make baseline prediction using trained LightGBM model if available,
+    Make baseline prediction using cached LightGBM model if available,
     otherwise fall back to seasonal patterns
     """
-    # Try to load and use trained model first
-    model_data = load_trained_model(city, feature)
+    # Try to use cached model first
+    cache_key = f"{city}_{feature}"
+    model_data = models_cache.get(cache_key)
     
     if model_data and model_data['model']:
         try:
-            # Prepare feature vector
+            # Prepare feature vector in exact order expected by model
             X = []
             for fname in model_data['feature_names']:
                 val = features_dict.get(fname, 0)
@@ -243,19 +257,15 @@ def make_baseline_prediction(df, city, feature, pred_date, features_dict):
             # Make prediction
             prediction = model_data['model'].predict(X)[0]
             
-            # Add small noise for realism
-            noise = np.random.normal(0, abs(prediction) * 0.005)
-            prediction += noise
-            
             return float(prediction), True  # True = used real model
         except Exception as e:
-            print(f"Model prediction failed for {city}/{feature}: {e}")
+            print(f"  ❌ Cached model prediction failed for {city}/{feature}: {e}")
             # Fall through to fallback
     
     # Fallback: Use seasonal patterns and trends
     city_data = df[df['city'] == city].copy()
     
-    # Get seasonal average
+    # Get seasonal average for this month
     seasonal_avg = get_seasonal_pattern(df, city, feature, pred_date.month)
     
     # Get recent trend (last 30 days)
@@ -277,7 +287,14 @@ def make_baseline_prediction(df, city, feature, pred_date, features_dict):
     return float(prediction), False  # False = used fallback
 
 def load_rl_model(city):
-    """Load PPO RL model if available"""
+    """Load cached PPO RL model if available"""
+    cache_key = f"{city}_rl"
+    
+    # Return cached model if available
+    if cache_key in models_cache:
+        return models_cache[cache_key]
+    
+    # Try to load from disk
     rl_path = os.path.join(MODELS_DIR, city, 'rl', 'ppo_agent_v2.zip')
     
     if not os.path.exists(rl_path) or not HAS_SB3:
@@ -285,9 +302,10 @@ def load_rl_model(city):
     
     try:
         model = PPO.load(rl_path)
+        models_cache[cache_key] = model  # Cache it
         return model
     except Exception as e:
-        print(f"Warning: Failed to load RL model for {city}: {e}")
+        print(f"  ❌ Failed to load RL model for {city}: {e}")
         return None
 
 def apply_rl_correction(city, baseline_pred, features, target_feature):
@@ -507,9 +525,16 @@ async def predict(request: PredictionRequest):
         steps[2].progress = 60
         
         # Step 4: Baseline prediction
-        # Check if we have a trained model
-        model_data = load_trained_model(request.city, request.feature)
+        # Use cached model if available
+        cache_key = f"{request.city}_{request.feature}"
+        model_data = models_cache.get(cache_key)
         using_real_model = model_data is not None and model_data['model'] is not None
+        
+        print(f"\n[Predict] {request.city}/{request.feature}/{request.date}")
+        print(f"  Model cache key: {cache_key}")
+        print(f"  Model found: {using_real_model}")
+        if using_real_model:
+            print(f"  Model type: {type(model_data['model']).__name__}")
         
         steps.append(PredictionStep(
             step="baseline_model",
@@ -519,6 +544,7 @@ async def predict(request: PredictionRequest):
         ))
         
         baseline_pred, used_real_baseline = make_baseline_prediction(df, request.city, request.feature, pred_date, features)
+        print(f"  Baseline prediction: {baseline_pred} (using_real={used_real_baseline})")
         
         steps[3].status = "complete"
         steps[3].progress = 80
@@ -603,15 +629,144 @@ async def predict_batch(requests: list[PredictionRequest]):
 # STARTUP
 # ============================================================================
 
+@app.get("/test")
+async def test_prediction():
+    """Test endpoint to verify model predictions"""
+    try:
+        df = load_data()
+        
+        # Test Karachi temperature_max for 2026-01-01
+        test_city = "Karachi"
+        test_feature = "temperature_max"
+        test_date = datetime(2026, 1, 1)
+        
+        # Create features
+        features = create_features_for_prediction(df, test_city, test_date, test_feature)
+        
+        # Try to load model
+        model_data = load_trained_model(test_city, test_feature)
+        
+        if model_data and model_data['model']:
+            # Make prediction with model
+            X = [features.get(fname, 0) for fname in model_data['feature_names']]
+            X = np.array(X).reshape(1, -1)
+            baseline_pred = float(model_data['model'].predict(X)[0])
+            model_used = "trained LightGBM"
+        else:
+            # Fallback prediction
+            baseline_pred = get_seasonal_pattern(df, test_city, test_feature, 1)
+            model_used = "statistical fallback"
+        
+        # Get RL correction
+        rl_model = load_rl_model(test_city)
+        if rl_model:
+            rl_pred, correction = apply_rl_correction(test_city, baseline_pred, features, test_feature)
+            rl_used = "trained PPO"
+        else:
+            correction = 0.0
+            rl_pred = baseline_pred
+            rl_used = "no RL model"
+        
+        return {
+            "test_case": {
+                "city": test_city,
+                "feature": test_feature,
+                "date": "2026-01-01"
+            },
+            "prediction": {
+                "baseline": round(baseline_pred, 2),
+                "rl_correction": round(correction, 2),
+                "final": round(rl_pred, 2)
+            },
+            "models_used": {
+                "baseline": model_used,
+                "rl": rl_used
+            },
+            "expected_colab_result": {
+                "baseline": 24.33,
+                "rl_correction": 0.04,
+                "final": 24.37
+            },
+            "feature_count": len(features),
+            "model_path": get_model_path(test_city, test_feature)
+        }
+    except Exception as e:
+        return {"error": str(e), "traceback": str(e.__traceback__)}
+
+def verify_all_models():
+    """Verify and cache all available models at startup"""
+    global models_cache, model_availability
+    
+    print("\n" + "="*60)
+    print("VERIFYING ALL MODELS")
+    print("="*60)
+    
+    total_models = 0
+    loaded_models = 0
+    
+    for city in CITIES.keys():
+        print(f"\n{city}:")
+        model_availability['baseline'][city] = {}
+        
+        for feature in FEATURES:
+            total_models += 1
+            model_path = get_model_path(city, feature)
+            
+            if model_path and os.path.exists(model_path):
+                model_data = load_trained_model(city, feature)
+                if model_data and model_data['model']:
+                    models_cache[f"{city}_{feature}"] = model_data
+                    model_availability['baseline'][city][feature] = True
+                    loaded_models += 1
+                    print(f"  ✓ {feature:<20} loaded ({len(model_data['feature_names'])} features)")
+                else:
+                    model_availability['baseline'][city][feature] = False
+                    print(f"  ⚠️  {feature:<20} file exists but failed to load")
+            else:
+                model_availability['baseline'][city][feature] = False
+                print(f"  ❌ {feature:<20} not found")
+        
+        # Check RL model
+        rl_path = os.path.join(MODELS_DIR, city, 'rl', 'ppo_agent_v2.zip')
+        if os.path.exists(rl_path) and HAS_SB3:
+            try:
+                rl_model = PPO.load(rl_path)
+                models_cache[f"{city}_rl"] = rl_model
+                model_availability['rl'][city] = True
+                print(f"  ✓ RL Model (PPO)       loaded")
+            except Exception as e:
+                model_availability['rl'][city] = False
+                print(f"  ⚠️  RL Model            failed: {e}")
+        else:
+            model_availability['rl'][city] = False
+            print(f"  ❌ RL Model            not found")
+    
+    print("\n" + "="*60)
+    print(f"SUMMARY: {loaded_models}/{total_models} baseline models loaded")
+    print(f"         {sum(model_availability['rl'].values())}/{len(CITIES)} RL models loaded")
+    if loaded_models == 0:
+        print("⚠️  WARNING: No trained models loaded! Using fallback predictions.")
+    else:
+        print("✓ Models cached and ready for predictions")
+    print("="*60 + "\n")
+
 @app.on_event("startup")
 async def startup_event():
-    """Load data on startup"""
+    """Load data and models on startup"""
     try:
-        load_data()
+        df = load_data()
         print("✓ Data loaded successfully")
         print(f"  Path: {DATA_PATH}")
+        print(f"  Shape: {df.shape}")
+        print(f"  Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+        
+        # Load and cache all models
+        verify_all_models()
+            
     except Exception as e:
         print(f"✗ Error loading data: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,7 +6,7 @@ import os
 import sys
 
 # Check if models directory exists
-MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
+MODELS_DIR = os.path.join(os.path.dirname(__file__), '..', 'models', 'models_city_v3')
 
 CITIES = ['Karachi', 'Lahore', 'Islamabad', 'Peshawar', 'Quetta']
 FEATURES = {
