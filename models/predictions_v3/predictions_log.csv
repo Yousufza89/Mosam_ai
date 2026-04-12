@@ -1,0 +1,5 @@
+timestamp,city,feature,prediction_date,baseline_prediction,rl_correction,rl_prediction,model_version
+2026-04-11 19:26:54,Lahore,temperature_max,2026-04-12,19.78,-0.03,19.75,v3
+2026-04-11 19:28:22,Karachi,temperature_min,2026-01-01,18.72,0.05,18.77,v3
+2026-04-11 19:32:29,Karachi,temperature_min,2026-01-01,18.72,0.05,18.77,v3
+2026-04-12 06:13:56,Karachi,temperature_max,2026-04-01,24.33,0.04,24.37,v3

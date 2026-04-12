@@ -1,36 +1,178 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mosam AI - Weather Prediction Platform
 
-## Getting Started
+An AI-powered weather prediction platform for Pakistan, built with Next.js and Machine Learning.
 
-First, run the development server:
+## Features
+
+- **AI-Powered Predictions**: Uses LightGBM baseline models with PPO reinforcement learning corrections
+- **108 Engineered Features**: Comprehensive feature engineering from historical weather data
+- **5 Major Cities**: Karachi, Lahore, Islamabad, Peshawar, Quetta
+- **Real-time Processing**: Step-by-step ML pipeline visualization
+- **Professional Dashboard**: Modern UI with glassmorphism design
+
+## Architecture
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Next.js App   │────▶│  Next.js API     │────▶│  Python ML      │
+│   (Frontend)    │     │  (/api/predict)  │     │  FastAPI Service│
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │                          │
+                               ▼                          ▼
+                        ┌─────────────┐           ┌──────────────┐
+                        │  Prisma DB  │           │  Data File   │
+                        │  (Predictions)│          │  (CSV)       │
+                        └─────────────┘           └──────────────┘
+```
+
+## Quick Start
+
+### 1. Install Dependencies
+
+**Frontend:**
+```bash
+npm install
+# or
+pnpm install
+```
+
+**ML Service:**
+```bash
+cd ml_service
+pip install -r requirements.txt
+```
+
+### 2. Environment Setup
+
+Copy `.env.example` to `.env.local` and configure:
+
+```env
+DATABASE_URL="your_database_url"
+NEXTAUTH_SECRET="your_secret"
+NEXTAUTH_URL="http://localhost:3000"
+ML_SERVICE_URL="http://localhost:8000"
+```
+
+### 3. Start the ML Service
+
+**Windows:**
+```bash
+cd ml_service
+start.bat
+```
+
+**Mac/Linux:**
+```bash
+cd ml_service
+chmod +x start.sh
+./start.sh
+```
+
+The ML service will start on http://localhost:8000
+
+### 4. Start the Next.js App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ML Prediction Pipeline
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+When you make a prediction, the system runs these steps:
 
-## Learn More
+1. **Data Loading** - Load historical weather dataset (12,785 records)
+2. **Date Parsing** - Validate and parse the prediction date
+3. **Feature Engineering** - Extract 108 engineered features
+4. **Baseline Model** - Run LightGBM prediction
+5. **RL Correction** - Apply PPO reinforcement learning correction
+6. **Confidence Calc** - Calculate prediction confidence
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Deploy ML Service (Render/Railway/Heroku)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push code to GitHub
+2. Create new Web Service on Render
+3. Set build command: `pip install -r requirements.txt`
+4. Set start command: `python app.py`
+5. Add environment variable: `PORT=8000`
 
-## Deploy on Vercel
+### Deploy Next.js (Vercel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+vercel --prod
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Update `ML_SERVICE_URL` environment variable in Vercel dashboard to point to your deployed ML service.
+
+## Project Structure
+
+```
+mosam_ai/
+├── app/                    # Next.js app directory
+│   ├── api/predict/        # Prediction API route
+│   └── user/dashboard/     # Dashboard page
+├── ml_service/             # Python FastAPI service
+│   ├── app.py             # Main FastAPI app
+│   └── requirements.txt   # Python dependencies
+├── data/                   # Data files
+│   └── pak_weather_engineered_v3.csv
+└── models/                 # Jupyter notebooks
+    └── Predict_v3_*.ipynb
+```
+
+## API Endpoints
+
+### ML Service
+
+- `GET /` - Service info
+- `GET /health` - Health check
+- `POST /predict` - Make prediction
+  ```json
+  {
+    "city": "Karachi",
+    "feature": "temperature_max",
+    "date": "2026-04-01"
+  }
+  ```
+
+### Next.js API
+
+- `POST /api/predict` - Proxy to ML service with auth
+- `POST /api/predict/save` - Save prediction to history
+
+## Data Features
+
+The model uses 108 engineered features:
+- **Time Features**: year, month, day, day_of_year, week
+- **Cyclical Features**: sin/cos transformations for seasonality
+- **Lag Features**: 1, 2, 3, 5, 7, 14, 21, 30-day lags
+- **Rolling Stats**: 3, 7, 14, 30-day means, std, min, max
+- **Trend Features**: Differences, acceleration, volatility
+- **Seasonal Features**: Season encoding, monsoon detection
+- **City Features**: Lat/lon, coastal flag
+
+## Development
+
+### Running Tests
+
+```bash
+npm test
+```
+
+### Database Migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### ML Service Development
+
+The ML service includes fallback prediction logic if trained models are not available. For production use, train and save models using the Jupyter notebooks in `models/`.
+
+## License
+
+MIT License - 2026 Mosam AI
+

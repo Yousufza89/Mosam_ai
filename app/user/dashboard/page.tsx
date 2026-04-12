@@ -18,7 +18,16 @@ import {
   CloudRain,
   ThermometerSnowflake,
   Sun,
-  Sparkles
+  Sparkles,
+  Brain,
+  Cpu,
+  Database,
+  Activity,
+  BarChart3,
+  GitBranch,
+  Zap,
+  Loader2,
+  Check
 } from "lucide-react";
 
 export default function UserDashboard() {
@@ -35,6 +44,8 @@ export default function UserDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  const [predictionSteps, setPredictionSteps] = useState<any[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const cities = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
   const features = [
@@ -67,6 +78,8 @@ export default function UserDashboard() {
     setError("");
     setIsLoading(true);
     setPrediction(null);
+    setPredictionSteps([]);
+    setCurrentStep(0);
 
     try {
       const response = await fetch("/api/predict", {
@@ -77,6 +90,21 @@ export default function UserDashboard() {
 
       if (!response.ok) throw new Error("Prediction failed");
       const data = await response.json();
+      
+      // Animate through the prediction steps
+      if (data.steps && data.steps.length > 0) {
+        setPredictionSteps(data.steps);
+        
+        // Animate step by step
+        for (let i = 0; i < data.steps.length; i++) {
+          setCurrentStep(i);
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+        
+        // Small delay before showing result
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
       setPrediction(data);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -220,7 +248,10 @@ export default function UserDashboard() {
                   className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:scale-[1.01] active:scale-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group pt-4"
                 >
                   {isLoading ? (
-                    <div className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Processing...
+                    </div>
                   ) : (
                     <>
                       Generate Prediction
@@ -256,14 +287,124 @@ export default function UserDashboard() {
               </div>
 
               <AnimatePresence mode="wait">
-                {prediction ? (
+                {isLoading && predictionSteps.length > 0 ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex flex-col justify-center p-6"
+                  >
+                    {/* ML Processing Steps */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-6">
+                        <Brain className="h-5 w-5 text-primary animate-pulse" />
+                        <span className="font-bold text-sm">AI Model Processing</span>
+                      </div>
+                      
+                      {predictionSteps.map((step, index) => {
+                        const isActive = index === currentStep;
+                        const isComplete = index < currentStep;
+                        const icons: { [key: string]: any } = {
+                          data_loading: Database,
+                          date_parsing: Calendar,
+                          feature_engineering: Cpu,
+                          baseline_model: BarChart3,
+                          rl_correction: GitBranch,
+                          confidence_calc: Activity
+                        };
+                        const StepIcon = icons[step.step] || Zap;
+                        
+                        return (
+                          <motion.div
+                            key={step.step}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ 
+                              opacity: isActive || isComplete ? 1 : 0.4,
+                              x: 0 
+                            }}
+                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                              isActive ? 'bg-primary/10 border border-primary/30' : 
+                              isComplete ? 'bg-emerald-500/10 border border-emerald-500/30' : 
+                              'bg-secondary/30 border border-border'
+                            }`}
+                          >
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                              isActive ? 'bg-primary text-primary-foreground' :
+                              isComplete ? 'bg-emerald-500 text-white' :
+                              'bg-muted text-muted-foreground'
+                            }`}>
+                              {isComplete ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <StepIcon className={`h-4 w-4 ${isActive ? 'animate-pulse' : ''}`} />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-semibold ${
+                                isActive ? 'text-primary' : 
+                                isComplete ? 'text-emerald-600' : 
+                                'text-muted-foreground'
+                              }`}>
+                                {step.message}
+                              </p>
+                              {isActive && (
+                                <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
+                                  <motion.div 
+                                    className="h-full bg-primary"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${step.progress}%` }}
+                                    transition={{ duration: 0.3 }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <span className={`text-xs font-bold ${
+                              isActive ? 'text-primary' : 
+                              isComplete ? 'text-emerald-600' : 
+                              'text-muted-foreground'
+                            }`}>
+                              {step.progress}%
+                            </span>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Overall Progress */}
+                    <div className="mt-8 pt-6 border-t border-border">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                          Processing Pipeline
+                        </span>
+                        <span className="text-xs font-bold text-primary">
+                          {Math.round((currentStep / predictionSteps.length) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-primary to-purple-500"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(currentStep / predictionSteps.length) * 100}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : prediction ? (
                   <motion.div
                     key="result"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex-1 flex flex-col justify-center items-center text-center space-y-8 py-8"
+                    className="flex-1 flex flex-col justify-center items-center text-center space-y-6 py-4"
                   >
+                    {/* Model Badge */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                      <Sparkles className="h-3 w-3 text-primary" />
+                      <span className="text-xs font-bold text-primary">{prediction.modelVersion || "AI-v3.0"}</span>
+                    </div>
+                    
                     <div className="relative">
                       <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
                       <div className="relative h-32 w-32 sm:h-40 sm:w-40 bg-gradient-to-br from-primary to-purple-600 rounded-full flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white/20">
@@ -276,14 +417,14 @@ export default function UserDashboard() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">
                         {featureLabels[feature]}
                       </p>
-                      <h4 className="text-3xl font-black tracking-tight">
+                      <h4 className="text-2xl font-black tracking-tight">
                         {city}, Pakistan
                       </h4>
-                      <p className="text-lg font-bold text-primary">
+                      <p className="text-base font-bold text-primary">
                         {new Date(date).toLocaleDateString('en-US', { 
                           weekday: 'long', 
                           year: 'numeric', 
@@ -293,16 +434,73 @@ export default function UserDashboard() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-md pt-4">
-                      <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
-                        <p className="text-xs text-muted-foreground mb-1 font-bold">Confidence</p>
-                        <p className="text-xl font-black text-emerald-500">94%</p>
+                    {/* AI Prediction Details */}
+                    <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+                      <div className="p-3 rounded-xl bg-secondary/30 border border-border">
+                        <p className="text-[10px] text-muted-foreground mb-1 font-bold uppercase tracking-wider">Baseline</p>
+                        <p className="text-lg font-black text-blue-500">{prediction.baselineTemp}</p>
                       </div>
-                      <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
-                        <p className="text-xs text-muted-foreground mb-1 font-bold">Model</p>
-                        <p className="text-xl font-black text-purple-500">ML-v2.1</p>
+                      <div className="p-3 rounded-xl bg-secondary/30 border border-border">
+                        <p className="text-[10px] text-muted-foreground mb-1 font-bold uppercase tracking-wider">RL Correction</p>
+                        <p className={`text-lg font-black ${prediction.rlCorrection?.startsWith('+') ? 'text-emerald-500' : 'text-orange-500'}`}>
+                          {prediction.rlCorrection}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                        <p className="text-[10px] text-emerald-600 mb-1 font-bold uppercase tracking-wider">Confidence</p>
+                        <p className="text-lg font-black text-emerald-600">{prediction.confidence}%</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                        <p className="text-[10px] text-purple-600 mb-1 font-bold uppercase tracking-wider">Features</p>
+                        <p className="text-lg font-black text-purple-600">108</p>
                       </div>
                     </div>
+
+                    {/* Model Status Indicator */}
+                    {prediction.featureSummary?.using_trained_models !== undefined && (
+                      <div className={`w-full max-w-sm p-3 rounded-xl border ${prediction.featureSummary.using_trained_models ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Brain className={`h-4 w-4 ${prediction.featureSummary.using_trained_models ? 'text-emerald-600' : 'text-amber-600'}`} />
+                            <span className={`text-xs font-bold ${prediction.featureSummary.using_trained_models ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {prediction.featureSummary.using_trained_models ? 'Trained Models Active' : 'Fallback Mode'}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] px-2 py-1 rounded-full ${prediction.featureSummary.using_trained_models ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                            {prediction.featureSummary.using_trained_models ? '✓' : '!'}
+                          </span>
+                        </div>
+                        {!prediction.featureSummary.using_trained_models && (
+                          <p className="text-[10px] text-amber-700 mt-2">
+                            Copy your trained .pkl models to ml_service/models/ for real predictions
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Feature Summary */}
+                    {prediction.featureSummary && (
+                      <div className="w-full max-w-sm p-3 rounded-xl bg-muted/50 border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Database className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Analysis Summary</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{prediction.featureSummary.season}</p>
+                            <p className="text-[10px] text-muted-foreground">Season</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{prediction.featureSummary.data_points}</p>
+                            <p className="text-[10px] text-muted-foreground">Data Points</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{prediction.featureSummary.recent_trend}</p>
+                            <p className="text-[10px] text-muted-foreground">Trend</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {savedMessage && (
                       <motion.div
