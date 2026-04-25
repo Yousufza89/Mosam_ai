@@ -15,9 +15,8 @@ services:
     name: mosam-ml-service
     runtime: python
     plan: free
-    rootDirectory: ml_service
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    buildCommand: cd ml_service && pip install -r requirements.txt
+    startCommand: cd ml_service && uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
