@@ -238,15 +238,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ActionCard
-                title="Performance Analytics"
-                description="View detailed ML model performance metrics and charts"
-                href="/admin/performance"
-                icon="📈"
-                color="purple"
-              />
-
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <ActionCard
                 title="User Management"
                 description="View and manage all registered users"
@@ -261,6 +253,30 @@ export default function AdminDashboard() {
                 href="/admin/all-predictions"
                 icon="🌍"
                 color="green"
+              />
+
+              <ActionCard
+                title="Performance Analytics"
+                description="View detailed ML model performance metrics and charts"
+                href="/admin/performance"
+                icon="📈"
+                color="purple"
+              />
+
+              <ActionCard
+                title="System Settings"
+                description="Configure system-wide settings and controls"
+                href="/admin/settings"
+                icon="⚙️"
+                color="orange"
+              />
+
+              <ActionCard
+                title="LLM Settings"
+                description="Configure AI message generation and API integration"
+                href="/admin/llm-settings"
+                icon="🤖"
+                color="indigo"
               />
             </div>
           </>
@@ -339,12 +355,14 @@ function ActionCard({
   description: string
   href: string
   icon: string
-  color: "blue" | "green" | "purple"
+  color: "blue" | "green" | "purple" | "orange" | "indigo"
 }) {
   const colorClasses = {
     blue: "hover:border-blue-500",
     green: "hover:border-green-500",
-    purple: "hover:border-purple-500"
+    purple: "hover:border-purple-500",
+    orange: "hover:border-orange-500",
+    indigo: "hover:border-indigo-500"
   }
 
   return (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import LLMMessageDisplay, { QuickLLMInsight } from "@/components/LLMMessage";
 import { 
   MapPin, 
   Calendar, 
@@ -46,6 +47,7 @@ export default function UserDashboard() {
   const [savedMessage, setSavedMessage] = useState("");
   const [predictionSteps, setPredictionSteps] = useState<any[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [llmMessage, setLlmMessage] = useState<any>(null);
 
   const cities = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
   const features = [
@@ -106,6 +108,7 @@ export default function UserDashboard() {
       }
       
       setPrediction(data);
+      setLlmMessage(data.llmMessage);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -164,7 +167,7 @@ export default function UserDashboard() {
             animate={{ opacity: 1, x: 0 }}
             className="lg:col-span-5 space-y-6"
           >
-            <div className="glass-card">
+            <div id="prediction-form" className="glass-card">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Search className="h-5 w-5 text-primary" />
                 Configure Prediction
@@ -512,6 +515,24 @@ export default function UserDashboard() {
                         {savedMessage}
                       </motion.div>
                     )}
+
+                    {/* LLM Message Display */}
+                    <LLMMessageDisplay
+                      message={llmMessage}
+                      isVisible={!!llmMessage}
+                      onSuggestionClick={(suggestion) => {
+                        // Extract city name from suggestion and set it
+                        const cityMatch = suggestion.match(/(?:Try|Check|Predict for)\s+(\w+)/i);
+                        if (cityMatch) {
+                          const suggestedCity = cityMatch[1];
+                          if (cities.includes(suggestedCity)) {
+                            setCity(suggestedCity);
+                            // Scroll to prediction form
+                            document.getElementById('prediction-form')?.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }
+                      }}
+                    />
                   </motion.div>
                 ) : (
                   <motion.div

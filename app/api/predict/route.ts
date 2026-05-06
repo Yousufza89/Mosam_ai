@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import type { City } from "@/data/weatherData"
+import { prisma } from "@/lib/prisma"
+import { llmService } from "@/lib/llm-service"
 
 export async function POST(request: Request) {
   try {
@@ -194,19 +196,69 @@ export async function POST(request: Request) {
     // Calculate confidence based on correction magnitude
     const confidence = Math.max(75, 98 - (correctionMagnitude * 3));
 
-    return NextResponse.json({
-      city,
-      feature,
-      date,
-      baselineTemp: baselineTemp.toFixed(2),
-      rlCorrection: rlCorrection > 0 ? `+${rlCorrection.toFixed(2)}` : rlCorrection.toFixed(2),
-      prediction_value: Number(rlCorrectedTemp.toFixed(2)),
-      confidence: confidence.toFixed(1),
-      modelVersion: featureSummary?.baseline_model_type || "AI-v3.0",
-      steps,
-      featureSummary,
-      usingRealModel: featureSummary?.using_trained_models || false
-    })
+    // Save prediction to database
+    let savedPrediction = null;
+    try {
+      // Get user's previous prediction count
+      const previousPredictions = await prisma.prediction.count({
+        where: { userId: session.user.id }
+      });
+
+      savedPrediction = await prisma.prediction.create({
+        data: {
+          userId: session.user.id,
+          city,
+          predictionDate: new Date(date),
+          baselineTemp,
+          rlCorrectedTemp,
+          confidenceScore: confidence,
+          modelVersion: featureSummary?.baseline_model_type || "AI-v3.0"
+        }
+      });
+
+      // Generate LLM message
+      const llmMessage = await llmService.generatePredictionMessage({
+        city,
+        baselineTemp,
+        rlCorrectedTemp,
+        confidenceScore: confidence,
+        userName: session.user.name || undefined,
+        previousPredictions
+      });
+
+      return NextResponse.json({
+        city,
+        feature,
+        date,
+        baselineTemp: baselineTemp.toFixed(2),
+        rlCorrection: rlCorrection > 0 ? `+${rlCorrection.toFixed(2)}` : rlCorrection.toFixed(2),
+        prediction_value: Number(rlCorrectedTemp.toFixed(2)),
+        confidence: confidence.toFixed(1),
+        modelVersion: featureSummary?.baseline_model_type || "AI-v3.0",
+        steps,
+        featureSummary,
+        usingRealModel: featureSummary?.using_trained_models || false,
+        llmMessage,
+        predictionId: savedPrediction.id
+      });
+
+    } catch (dbError) {
+      console.error("Database/LLM error:", dbError);
+      // Return prediction even if DB/LLM fails
+      return NextResponse.json({
+        city,
+        feature,
+        date,
+        baselineTemp: baselineTemp.toFixed(2),
+        rlCorrection: rlCorrection > 0 ? `+${rlCorrection.toFixed(2)}` : rlCorrection.toFixed(2),
+        prediction_value: Number(rlCorrectedTemp.toFixed(2)),
+        confidence: confidence.toFixed(1),
+        modelVersion: featureSummary?.baseline_model_type || "AI-v3.0",
+        steps,
+        featureSummary,
+        usingRealModel: featureSummary?.using_trained_models || false
+      });
+    }
 
   } catch (error: any) {
     console.error("Prediction error:", error)

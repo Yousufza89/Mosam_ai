@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         email: true,
         role: true,
         createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             predictions: true
@@ -37,14 +38,29 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" }
     })
 
-    const usersWithStats = users.map((user: (typeof users)[number]) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      joinedDate: user.createdAt,
-      totalPredictions: user._count.predictions
-    }))
+    // Get accuracy stats for each user
+    const usersWithStats = await Promise.all(
+      users.map(async (user: (typeof users)[number]) => {
+        const accuracyStats = await prisma.prediction.aggregate({
+          where: { 
+            userId: user.id,
+            accuracy: { not: null }
+          },
+          _avg: { accuracy: true }
+        })
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          joinedDate: user.createdAt,
+          lastLogin: user.updatedAt,
+          totalPredictions: user._count.predictions,
+          accuracy: accuracyStats._avg.accuracy
+        }
+      })
+    )
 
     return NextResponse.json(usersWithStats)
   } catch (error) {
