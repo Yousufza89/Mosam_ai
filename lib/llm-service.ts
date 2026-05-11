@@ -25,20 +25,26 @@ class LLMService {
 
   async generatePredictionMessage(data: PredictionData): Promise<LLMMessage> {
     try {
+      console.log("LLM Service: Generating message for", data.city, "confidence:", data.confidenceScore)
+      
       // Try Gemini first (free tier is generous)
       if (this.geminiApiKey) {
+        console.log("LLM Service: Using Gemini API")
         return await this.generateGeminiMessage(data)
       }
       
       // Fallback to Claude if available
       if (this.claudeApiKey) {
+        console.log("LLM Service: Using Claude API")
         return await this.generateClaudeMessage(data)
       }
 
       // Fallback to template messages if no API keys
+      console.log("LLM Service: Using template fallback")
       return this.generateTemplateMessage(data)
     } catch (error) {
       console.error('LLM Service Error:', error)
+      console.log("LLM Service: Falling back to template")
       return this.generateTemplateMessage(data)
     }
   }
@@ -47,7 +53,7 @@ class LLMService {
     const prompt = this.createPredictionPrompt(data)
     
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiApiKey}`,
       {
         method: 'POST',
         headers: {
@@ -195,29 +201,61 @@ Keep it under 150 words, friendly and enthusiastic. Use emojis if appropriate. M
   }
 
   private generateTemplateMessage(data: PredictionData): LLMMessage {
-    const userName = data.userName || 'Weather Enthusiast'
-    const tempDiff = data.rlCorrectedTemp - data.baselineTemp
-    const direction = tempDiff > 0 ? 'warmer' : 'cooler'
+    const temp = data.rlCorrectedTemp
+    const tempDiff = Math.abs(data.rlCorrectedTemp - data.baselineTemp)
+    const isHot = temp > 30
+    const isCold = temp < 15
+    const isVeryHot = temp > 35
+    const isVeryCold = temp < 10
     
-    const templates = [
-      {
-        message: `🌟 Amazing prediction, ${userName}! Our AI adjusted the temperature for ${data.city} to be ${direction} by ${Math.abs(tempDiff).toFixed(1)}°. With ${data.confidenceScore}% confidence, you're really getting the hang of this! Want to try predicting for another major city?`,
-        suggestions: ['Try Mumbai', 'Check Delhi', 'Predict for Bangalore'],
-        followUpQuestions: ['What weather patterns interest you most?', 'Which city would you like to master predictions for?']
-      },
-      {
-        message: `🎯 Excellent work, ${userName}! Your ${data.city} prediction shows our AI thinks it'll be ${direction} than expected. At ${data.confidenceScore}% confidence, you're becoming quite the weather forecaster! Ready to challenge another city's weather?`,
-        suggestions: ['Test Chennai', 'Try Kolkata', 'Predict for Pune'],
-        followUpQuestions: ['How accurate have your predictions been so far?', 'What\'s your favorite city to predict for?']
-      },
-      {
-        message: `⚡ Impressive, ${userName}! The AI correction for ${data.city} suggests ${direction} temperatures (${Math.abs(tempDiff).toFixed(1)}° difference). Your ${data.confidenceScore}% confidence score shows you're learning fast! Which city will you predict next?`,
-        suggestions: ['Challenge Hyderabad', 'Try Ahmedabad', 'Predict for Jaipur'],
-        followUpQuestions: ['Are you surprised by the AI adjustment?', 'What city\'s weather puzzles you most?']
-      }
-    ]
-    
-    return templates[Math.floor(Math.random() * templates.length)]
+    let message = ""
+    let suggestions: string[] = []
+
+    // Create engaging, weather-specific messages
+    if (isVeryHot) {
+      message = `🔥 **EXTREME HEAT ALERT!** Temperature soaring to ${temp.toFixed(1)}°C in ${data.city}! Stay indoors, drink lots of water, and avoid outdoor activities. This is scorching hot weather!`
+    } else if (isHot) {
+      message = `☀️ **Hot day ahead!** Expect ${temp.toFixed(1)}°C in ${data.city}. Perfect for the pool but stay hydrated! Don't forget your sunscreen.`
+    } else if (isVeryCold) {
+      message = `🥶 **FREEZING COLD!** Bundle up! Temperature dropping to ${temp.toFixed(1)}°C in ${data.city}. Heavy coats, hot coffee, and warm blankets recommended!`
+    } else if (isCold) {
+      message = `🧥 **Chilly weather!** Pack a jacket for ${temp.toFixed(1)}°C in ${data.city}. Perfect weather for hot tea and cozy sweaters.`
+    } else if (temp >= 20 && temp <= 25) {
+      message = `🌤️ **PERFECT WEATHER!** Beautiful ${temp.toFixed(1)}°C in ${data.city} today! Ideal for outdoor activities, picnics, and a morning walk.`
+    } else if (temp > 25 && temp <= 30) {
+      message = `� **Lovely warm day!** ${temp.toFixed(1)}°C in ${data.city}. Great for outdoor sports and beach activities!`
+    } else {
+      message = `🌈 **Pleasant weather!** ${temp.toFixed(1)}°C expected in ${data.city}. Comfortable and enjoyable day ahead!`
+    }
+
+    // Add weather-specific advice
+    if (isHot || isVeryHot) {
+      message += ` 💧 **GRAB WATER** - Stay hydrated!`
+    } else if (isCold || isVeryCold) {
+      message += ` 🧤 **WARM UP** - Hot drinks recommended!`
+    } else if (temp >= 18 && temp <= 22) {
+      message += ` 🌳 **PERFECT** - Great for outdoor activities!`
+    }
+
+    // Add AI adjustment info if significant
+    if (tempDiff > 2) {
+      message += ` 🤖 **AI Insight:** Our weather AI adjusted the forecast by ${tempDiff.toFixed(1)}°C from the baseline prediction.`
+    }
+
+    // Add confidence and encouragement
+    message += ` 🎯 **${data.confidenceScore.toFixed(0)}% confidence** in this forecast. Great prediction, ${data.userName || 'weather enthusiast'}!`
+
+    // Simple working suggestions
+    const cities = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"]
+    const otherCities = cities.filter(city => city !== data.city)
+    suggestions = otherCities.slice(0, 2).map(city => `Try ${city}`)
+
+    return {
+      type: 'completion',
+      message,
+      suggestions,
+      followUpQuestions: [] // Remove non-working feature
+    }
   }
 
   async generateWeatherInsights(city: string, predictionsCount: number): Promise<LLMMessage> {

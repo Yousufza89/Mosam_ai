@@ -44,112 +44,42 @@ export default function LLMMessageDisplay({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-bold text-gray-800">AI Weather Insight</h3>
+              <h3 className="font-bold text-gray-800">🌤️ AI Weather Insight</h3>
               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                 {message.type === 'completion' ? 'Prediction Analysis' : 
                  message.type === 'insight' ? 'Weather Insight' : 'Encouragement'}
               </span>
             </div>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {message.message}
-            </p>
+            <div 
+              className="text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: message.message }}
+            />
           </div>
         </div>
 
-        {/* Suggestions Section */}
+        {/* Working Suggestions */}
         {message.suggestions && message.suggestions.length > 0 && (
-          <div className="mb-4">
-            <button
-              onClick={() => setExpandedSection(expandedSection === 'suggestions' ? null : 'suggestions')}
-              className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium text-sm mb-2"
-            >
-              <Lightbulb className="w-4 h-4" />
-              {expandedSection === 'suggestions' ? 'Hide' : 'Show'} Suggestions
-              <ArrowRight className={`w-3 h-3 transition-transform ${expandedSection === 'suggestions' ? 'rotate-90' : ''}`} />
-            </button>
-            
-            <AnimatePresence>
-              {expandedSection === 'suggestions' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2"
+          <div className="border-t border-blue-200 pt-4">
+            <h4 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Try These Cities:
+            </h4>
+            <div className="flex gap-2 flex-wrap">
+              {message.suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSuggestionClick?.(suggestion)}
+                  className="px-4 py-2 bg-white rounded-lg border border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all group"
                 >
-                  {message.suggestions.map((suggestion, index) => (
-                    <motion.button
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      onClick={() => onSuggestionClick?.(suggestion)}
-                      className="w-full text-left p-3 bg-white rounded-lg border border-purple-200 hover:border-purple-400 hover:shadow-md transition-all duration-200 group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700 group-hover:text-purple-700">
-                          📍 {suggestion}
-                        </span>
-                        <ArrowRight className="w-4 h-4 text-purple-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </motion.button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="w-3 h-3 text-blue-500 group-hover:translate-x-1 transition-transform" />
+                    <span className="text-sm text-gray-700 group-hover:text-gray-900">{suggestion}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
-
-        {/* Follow-up Questions Section */}
-        {message.followUpQuestions && message.followUpQuestions.length > 0 && (
-          <div>
-            <button
-              onClick={() => setExpandedSection(expandedSection === 'questions' ? null : 'questions')}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm mb-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              {expandedSection === 'questions' ? 'Hide' : 'Show'} Questions
-              <ArrowRight className={`w-3 h-3 transition-transform ${expandedSection === 'questions' ? 'rotate-90' : ''}`} />
-            </button>
-            
-            <AnimatePresence>
-              {expandedSection === 'questions' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2"
-                >
-                  {message.followUpQuestions.map((question, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="p-3 bg-blue-50 rounded-lg border border-blue-200"
-                    >
-                      <div className="flex items-start gap-2">
-                        <TrendingUp className="w-4 h-4 text-blue-500 mt-0.5" />
-                        <p className="text-gray-700 text-sm">{question}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex flex-wrap gap-2">
-            <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg">
-              Make Another Prediction
-            </button>
-            <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium">
-              View My History
-            </button>
-          </div>
-        </div>
       </motion.div>
     </AnimatePresence>
   )

@@ -99,6 +99,26 @@ export default function HistoryPage() {
     }
   }
 
+  const updateAccuracy = async (predictionId: string) => {
+    try {
+      const response = await fetch(`/api/predictions/${predictionId}/update-accuracy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        await fetchPredictions()
+        alert('Accuracy updated successfully!')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to update accuracy')
+      }
+    } catch (error) {
+      console.error('Update accuracy error:', error)
+      alert('Failed to update accuracy')
+    }
+  }
+
   const getAccuracyColor = (accuracy: number | null) => {
     if (accuracy === null) return "text-muted-foreground bg-muted"
     if (accuracy >= 90) return "text-emerald-500 bg-emerald-500/10"
@@ -107,8 +127,16 @@ export default function HistoryPage() {
   }
 
   const getFeatureData = (prediction: Prediction) => {
-    const featureKey = prediction.feature || features.find(f => (prediction.modelVersion || "").includes(f)) || "temperature_max";
-    return featureConfig[featureKey] || featureConfig["temperature_max"];
+    const featureKey = prediction.feature;
+    if (featureConfig[featureKey]) {
+      return featureConfig[featureKey];
+    }
+    return {
+      label: "Temperature", 
+      icon: Thermometer, 
+      color: "text-gray-500", 
+      unit: "°C"
+    };
   }
 
   const getPredictedValue = (prediction: Prediction) => {

@@ -122,7 +122,7 @@ export default function UserDashboard() {
       const response = await fetch("/api/predict/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ city, date, ...prediction })
+        body: JSON.stringify({ city, date, prediction })
       });
 
       if (!response.ok) throw new Error("Failed to save");
@@ -412,17 +412,17 @@ export default function UserDashboard() {
                       <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
                       <div className="relative h-32 w-32 sm:h-40 sm:w-40 bg-gradient-to-br from-primary to-purple-600 rounded-full flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white/20">
                         <span className="text-4xl sm:text-5xl font-black">
-                          {prediction.prediction_value?.toFixed(1)}
+                          {prediction.rlCorrectedTemp?.toFixed(1)}
                         </span>
                         <span className="text-sm sm:text-lg font-bold opacity-80">
-                          {featureUnits[feature]}
+                          {featureUnits[prediction.feature]}
                         </span>
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">
-                        {featureLabels[feature]}
+                        {featureLabels[prediction.feature] || "Temperature"}
                       </p>
                       <h4 className="text-2xl font-black tracking-tight">
                         {city}, Pakistan
@@ -435,6 +435,9 @@ export default function UserDashboard() {
                           day: 'numeric' 
                         })}
                       </p>
+                      <div className="text-4xl font-bold text-blue-500">
+                        {prediction.rlCorrectedTemp?.toFixed(1)}°{featureUnits[prediction.feature]}
+                      </div>
                     </div>
 
                     {/* AI Prediction Details */}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Cloud, 
   Sun, 
@@ -17,7 +17,9 @@ import {
   ChevronRight,
   CloudRain,
   Thermometer,
-  CloudSun
+  CloudSun,
+  Loader2,
+  Radio
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,7 +28,7 @@ type City = "Karachi" | "Islamabad" | "Lahore" | "Peshawar" | "Quetta";
 
 type ForecastDay = {
   day: string;
-  icon: any;
+  icon: string;
   high: number;
   low: number;
   condition: string;
@@ -50,77 +52,20 @@ type CityWeatherData = {
   tempRange: string;
   wetDays: number;
   forecast: ForecastDay[];
+  lastUpdated?: string;
 };
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Icon Mapping ─────────────────────────────────────────────────────────────
 
-const CITY_DATA: Record<City, CityWeatherData> = {
-  Islamabad: {
-    temp: 27, feelsLike: 25, condition: "Stormy", conditionSub: "Heavy rainfall expected",
-    rainChance: 82, intensity: 66, humidity: 78, wind: "18 km/h", precip: "9.2 mm",
-    uvIndex: "0 / 10", pressure: "1008 hPa", visibility: "4.2 km", confidence: "91%",
-    trend: "Cooling", tempRange: "18–30°", wetDays: 3,
-    forecast: [
-      { day: "Mon", icon: CloudRain, high: 26, low: 19, condition: "Rain" },
-      { day: "Tue", icon: Zap, high: 29, low: 22, condition: "Storm" },
-      { day: "Wed", icon: Cloud, high: 28, low: 20, condition: "Cloud" },
-      { day: "Thu", icon: Sun, high: 30, low: 23, condition: "Sun" },
-      { day: "Fri", icon: CloudRain, high: 27, low: 18, condition: "Rain" },
-    ],
-  },
-  Karachi: {
-    temp: 34, feelsLike: 38, condition: "Hazy Sun", conditionSub: "High humidity, coastal haze",
-    rainChance: 12, intensity: 20, humidity: 85, wind: "22 km/h", precip: "0.1 mm",
-    uvIndex: "9 / 10", pressure: "1012 hPa", visibility: "6.8 km", confidence: "88%",
-    trend: "Warming", tempRange: "28–36°", wetDays: 0,
-    forecast: [
-      { day: "Mon", icon: CloudSun, high: 34, low: 27, condition: "Hazy" },
-      { day: "Tue", icon: Sun, high: 36, low: 28, condition: "Sun" },
-      { day: "Wed", icon: Sun, high: 35, low: 28, condition: "Sun" },
-      { day: "Thu", icon: CloudSun, high: 33, low: 26, condition: "Partly" },
-      { day: "Fri", icon: CloudSun, high: 32, low: 26, condition: "Partly" },
-    ],
-  },
-  Lahore: {
-    temp: 31, feelsLike: 33, condition: "Partly Cloudy", conditionSub: "Warm with cloud cover",
-    rainChance: 28, intensity: 15, humidity: 60, wind: "12 km/h", precip: "1.4 mm",
-    uvIndex: "6 / 10", pressure: "1010 hPa", visibility: "8.1 km", confidence: "85%",
-    trend: "Stable", tempRange: "22–33°", wetDays: 1,
-    forecast: [
-      { day: "Mon", icon: CloudSun, high: 31, low: 22, condition: "Partly" },
-      { day: "Tue", icon: CloudRain, high: 28, low: 20, condition: "Rain" },
-      { day: "Wed", icon: Cloud, high: 27, low: 19, condition: "Cloud" },
-      { day: "Thu", icon: Sun, high: 33, low: 23, condition: "Sun" },
-      { day: "Fri", icon: Sun, high: 34, low: 24, condition: "Sun" },
-    ],
-  },
-  Peshawar: {
-    temp: 29, feelsLike: 27, condition: "Windy", conditionSub: "Strong northerly gusts",
-    rainChance: 35, intensity: 22, humidity: 55, wind: "34 km/h", precip: "2.8 mm",
-    uvIndex: "5 / 10", pressure: "1005 hPa", visibility: "10 km", confidence: "79%",
-    trend: "Cooling", tempRange: "19–31°", wetDays: 2,
-    forecast: [
-      { day: "Mon", icon: Wind, high: 29, low: 19, condition: "Windy" },
-      { day: "Tue", icon: CloudRain, high: 26, low: 17, condition: "Rain" },
-      { day: "Wed", icon: CloudSun, high: 28, low: 18, condition: "Partly" },
-      { day: "Thu", icon: Sun, high: 31, low: 20, condition: "Sun" },
-      { day: "Fri", icon: Sun, high: 30, low: 20, condition: "Sun" },
-    ],
-  },
-  Quetta: {
-    temp: 22, feelsLike: 19, condition: "Clear", conditionSub: "Cool mountain air",
-    rainChance: 8, intensity: 5, humidity: 38, wind: "9 km/h", precip: "0.0 mm",
-    uvIndex: "7 / 10", pressure: "870 hPa", visibility: "25 km", confidence: "94%",
-    trend: "Stable", tempRange: "12–24°", wetDays: 0,
-    forecast: [
-      { day: "Mon", icon: Sun, high: 22, low: 10, condition: "Clear" },
-      { day: "Tue", icon: Sun, high: 24, low: 11, condition: "Clear" },
-      { day: "Wed", icon: CloudSun, high: 21, low: 9, condition: "Partly" },
-      { day: "Thu", icon: Cloud, high: 18, low: 8, condition: "Cloud" },
-      { day: "Fri", icon: CloudRain, high: 17, low: 7, condition: "Rain" },
-    ],
-  },
+const ICON_MAP: Record<string, any> = {
+  Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer,
 };
+
+function getIcon(name: string) {
+  return ICON_MAP[name] || Cloud;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const CITIES: City[] = ["Karachi", "Islamabad", "Lahore", "Peshawar", "Quetta"];
 
@@ -203,12 +148,44 @@ function RainCanvas({ active }: { active: boolean }) {
 
 export default function HomePage() {
   const [activeCity, setActiveCity] = useState<City>("Islamabad");
-  const data = CITY_DATA[activeCity];
-  const isWet = data.rainChance > 40;
+  const [weatherData, setWeatherData] = useState<Record<string, CityWeatherData> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchWeather() {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/weather");
+        const json = await res.json();
+        setWeatherData(json.data);
+        setDataSource(json.source || "live");
+      } catch (err) {
+        console.error("Failed to fetch weather:", err);
+        setDataSource("error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchWeather();
+  }, []);
+
+  const data = weatherData?.[activeCity];
+  const isWet = (data?.rainChance ?? 0) > 40;
 
   return (
     <main className="relative min-h-screen bg-background overflow-hidden selection:bg-primary/30">
       <RainCanvas active={isWet} />
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Loading live weather...</p>
+          </div>
+        </div>
+      )}
       
       {/* Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-full bg-mesh-light dark:bg-mesh opacity-30 -z-10" />
@@ -295,24 +272,32 @@ export default function HomePage() {
                     <div className="flex items-center gap-2 text-primary font-bold text-sm tracking-widest uppercase mb-1">
                       <MapPin className="h-4 w-4" />
                       {activeCity}, Pakistan
+                      {dataSource === "live" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest ml-2">
+                          <Radio className="h-3 w-3 animate-pulse" /> Live
+                        </span>
+                      )}
                     </div>
-                    <h2 className="text-4xl font-black tracking-tight">{data.condition}</h2>
-                    <p className="text-muted-foreground font-medium">{data.conditionSub}</p>
+                    <h2 className="text-4xl font-black tracking-tight">{data?.condition || "—"}</h2>
+                    <p className="text-muted-foreground font-medium">{data?.conditionSub || "Loading..."}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-7xl font-black tracking-tighter text-gradient leading-none">
-                      {data.temp}°
+                      {data?.temp ?? "—"}°
                     </div>
-                    <p className="text-sm font-bold text-muted-foreground mt-2">Feels like {data.feelsLike}°</p>
+                    <p className="text-sm font-bold text-muted-foreground mt-2">Feels like {data?.feelsLike ?? "—"}°</p>
+                    {data?.lastUpdated && (
+                      <p className="text-[10px] font-bold text-muted-foreground/60 mt-1">Updated {new Date(data.lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
                   {[
-                    { label: "Rain", value: `${data.rainChance}%`, icon: Droplets, color: "text-blue-500" },
-                    { label: "Wind", value: data.wind, icon: Wind, color: "text-emerald-500" },
-                    { label: "Humidity", value: `${data.humidity}%`, icon: Cloud, color: "text-cyan-500" },
-                    { label: "UV Index", value: data.uvIndex, icon: Sun, color: "text-orange-500" }
+                    { label: "Rain", value: `${data?.rainChance ?? 0}%`, icon: Droplets, color: "text-blue-500" },
+                    { label: "Wind", value: data?.wind ?? "—", icon: Wind, color: "text-emerald-500" },
+                    { label: "Humidity", value: `${data?.humidity ?? 0}%`, icon: Cloud, color: "text-cyan-500" },
+                    { label: "UV Index", value: data?.uvIndex ?? "—", icon: Sun, color: "text-orange-500" }
                   ].map((item, i) => (
                     <div key={i} className="bg-secondary/30 rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all">
                       <item.icon className={`h-5 w-5 ${item.color} mb-3`} />
@@ -330,16 +315,19 @@ export default function HomePage() {
                     </Link>
                   </div>
                   <div className="flex justify-between gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {data.forecast.map((day, i) => (
-                      <div key={i} className="flex flex-col items-center gap-3 min-w-[64px] p-3 rounded-2xl bg-secondary/20 border border-border/30">
-                        <span className="text-[10px] font-black uppercase tracking-widest">{day.day}</span>
-                        <day.icon className={`h-6 w-6 ${i === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
-                        <div className="flex flex-col items-center">
-                          <span className="text-sm font-black">{day.high}°</span>
-                          <span className="text-[10px] font-bold text-muted-foreground">{day.low}°</span>
+                    {(data?.forecast || []).map((day, i) => {
+                      const DayIcon = getIcon(day.icon);
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-3 min-w-[64px] p-3 rounded-2xl bg-secondary/20 border border-border/30">
+                          <span className="text-[10px] font-black uppercase tracking-widest">{day.day}</span>
+                          <DayIcon className={`h-6 w-6 ${i === 0 ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm font-black">{day.high}°</span>
+                            <span className="text-[10px] font-bold text-muted-foreground">{day.low}°</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

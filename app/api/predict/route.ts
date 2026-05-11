@@ -193,8 +193,36 @@ export async function POST(request: Request) {
     const rlCorrectedTemp = Number(result.final_prediction);
     const correctionMagnitude = Math.abs(rlCorrection);
 
-    // Calculate confidence based on correction magnitude
-    const confidence = Math.max(75, 98 - (correctionMagnitude * 3));
+    // Calculate confidence based on multiple factors
+    const calculateConfidence = (correctionMagnitude: number, city: string, season: string) => {
+      // Base confidence varies by city (historical data accuracy)
+      const cityBaseConfidence: Record<string, number> = {
+        'Karachi': 85,  // Coastal, more predictable
+        'Lahore': 82,   // Continental, moderate variability
+        'Islamabad': 80, // Mountainous, less predictable
+        'Peshawar': 78,  // Variable climate
+        'Quetta': 75     // Arid, high variability
+      };
+
+      // Seasonal adjustments
+      const seasonalAdjustment: Record<string, number> = {
+        'Summer': -5,  // More heat waves, less predictable
+        'Winter': -3,  // More stable
+        'Spring/Autumn': 0 // Most predictable
+      };
+
+      // Correction magnitude penalty (larger corrections = less confidence)
+      const correctionPenalty = Math.min(correctionMagnitude * 4, 15);
+
+      // Calculate final confidence
+      const baseConfidence = cityBaseConfidence[city] || 80;
+      const seasonal = seasonalAdjustment[season] || 0;
+      const finalConfidence = Math.max(65, Math.min(95, baseConfidence + seasonal - correctionPenalty));
+
+      return Math.round(finalConfidence);
+    };
+
+    const confidence = calculateConfidence(correctionMagnitude, city, featureSummary?.season || "Spring/Autumn");
 
     // Save prediction to database
     let savedPrediction = null;
