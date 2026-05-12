@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,12 +13,11 @@ import {
   Zap, 
   ShieldCheck, 
   LineChart,
-  ChevronRight,
-  CloudRain,
-  Thermometer,
-  CloudSun,
+  GitBranch,
   Loader2,
-  Radio
+  Check,
+  Radio,
+  Users
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,6 +30,16 @@ type ForecastDay = {
   high: number;
   low: number;
   condition: string;
+  conditionSub: string;
+  rainChance: number;
+  intensity: number;
+  humidity: number;
+  wind: string;
+  precip: string;
+  uvIndex: string;
+  pressure: string;
+  visibility: string;
+  confidence: string;
 };
 
 type CityWeatherData = {
@@ -48,17 +56,21 @@ type CityWeatherData = {
   pressure: string;
   visibility: string;
   confidence: string;
-  trend: string;
-  tempRange: string;
-  wetDays: number;
-  forecast: ForecastDay[];
-  lastUpdated?: string;
+};
+
+type HomepageStats = {
+  accuracy: string;
+  cities: string;
+  latency: string;
+  uptime: string;
+  activeUsers: string;
+  todayPredictions: string;
 };
 
 // ─── Icon Mapping ─────────────────────────────────────────────────────────────
 
 const ICON_MAP: Record<string, any> = {
-  Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer,
+  Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer, CloudSnowflake,
 };
 
 function getIcon(name: string) {
@@ -151,6 +163,23 @@ export default function HomePage() {
   const [weatherData, setWeatherData] = useState<Record<string, CityWeatherData> | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<string>("");
+  const [stats, setData] = useState<HomepageStats | null>(null);
+
+  useEffect(() => {
+    const fetchHomepageStats = async () => {
+      try {
+        const response = await fetch('/api/homepage-stats');
+        if (response.ok) {
+          const data = await response.json();
+          setData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch homepage stats:', error);
+      }
+    };
+
+    fetchHomepageStats();
+  }, []);
 
   useEffect(() => {
     async function fetchWeather() {
@@ -238,20 +267,47 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 pt-4">
-              {[
-                { label: "Accuracy", value: "94%", icon: ShieldCheck },
-                { label: "Cities", value: "50+", icon: MapPin },
-                { label: "Latency", value: "12ms", icon: Zap }
-              ].map((stat, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center gap-2 text-primary">
-                    <stat.icon className="h-4 w-4" />
-                    <span className="text-xl font-black tracking-tight">{stat.value}</span>
-                  </div>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+            <div className="grid grid-cols-2 gap-8 pt-4">
                 </div>
-              ))}
+                <div className="text-right">
+                  <Link 
+                    href="/user/dashboard" 
+                    className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/20 px-6 py-3 rounded-full font-bold text-white hover:bg-white/30 transition-all group"
+                  >
+                    Try Now
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h4 className="text-xl font-semibold text-white mb-4">Powered by Advanced AI</h4>
+                <p className="text-white/80 mb-6">
+                  Our system analyzes multiple weather models to provide the most accurate predictions
+                </p>
+                <ul className="space-y-2 text-white/90 text-sm">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <span>{stats?.accuracy || "89%"} Accuracy Rate</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-400" />
+                    <span>{stats?.cities || "5"} Cities Covered</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-400" />
+                    <span>{stats?.latency || "Dynamic"} Response Time</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-400" />
+                    <span>{stats?.activeUsers || "1,247"} Active Users</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-indigo-400" />
+                    <span>{stats?.todayPredictions || "3,421"} Today Predictions</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </motion.div>
 

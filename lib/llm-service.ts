@@ -19,8 +19,8 @@ class LLMService {
   private claudeApiKey?: string
 
   constructor() {
-    this.geminiApiKey = process.env.GEMINI_API_KEY || ''
-    this.claudeApiKey = process.env.CLAUDE_API_KEY || undefined
+    this.geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || ''
+    this.claudeApiKey = process.env.NEXT_PUBLIC_CLAUDE_API_KEY || undefined
   }
 
   async generatePredictionMessage(data: PredictionData): Promise<LLMMessage> {
