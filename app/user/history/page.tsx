@@ -75,9 +75,32 @@ export default function HistoryPage() {
       const response = await fetch(url)
       if (!response.ok) throw new Error("Failed to fetch predictions")
       const data = await response.json()
-      setPredictions(data)
+      
+      // Try to update accuracy for predictions that don't have it yet
+      const updatedPredictions = await Promise.all(
+        data.map(async (prediction: Prediction) => {
+          if (prediction.accuracy === null && new Date(prediction.predictionDate) < new Date()) {
+            try {
+              const updateResponse = await fetch(`/api/predictions/${prediction.id}/update-accuracy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              })
+              if (updateResponse.ok) {
+                const updatedData = await updateResponse.json()
+                return { ...prediction, accuracy: updatedData.accuracy || prediction.accuracy }
+              }
+            } catch (error) {
+              console.error('Failed to update accuracy:', error)
+            }
+          }
+          return prediction
+        })
+      )
+      
+      setPredictions(updatedPredictions)
     } catch (err: any) {
-      setError(err.message || "Something went wrong")
+      console.error("Fetch predictions error:", err)
+      setError(err.message || "Failed to fetch predictions")
     } finally {
       setIsLoading(false)
     }
@@ -127,10 +150,22 @@ export default function HistoryPage() {
   }
 
   const getFeatureData = (prediction: Prediction) => {
-    const featureKey = prediction.feature;
+    // Determine feature type based on prediction data
+    // Check if we have both baseline and RL corrected temps to determine if it's min/max
+    let featureKey = "temperature_max";
+    
+    if (prediction.baselineTemp !== undefined && prediction.rlCorrectedTemp !== undefined) {
+      // If RL corrected is different, assume it's max temp prediction
+      featureKey = "temperature_max";
+    } else if (prediction.baselineTemp !== undefined && prediction.rlCorrectedTemp === undefined) {
+      // If only baseline temp, could be min or max - default to max
+      featureKey = "temperature_max";
+    }
+    
     if (featureConfig[featureKey]) {
       return featureConfig[featureKey];
     }
+    
     return {
       label: "Temperature", 
       icon: Thermometer, 
@@ -274,7 +309,6 @@ export default function HistoryPage() {
                       <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Prediction</th>
                       <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">City</th>
                       <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Value</th>
-                      <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Accuracy</th>
                       <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Created</th>
                       <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
                     </tr>
@@ -312,11 +346,6 @@ export default function HistoryPage() {
                             <div className="flex items-baseline gap-1">
                               <span className="text-lg font-black tracking-tight">{getPredictedValue(p)}</span>
                               <span className="text-xs font-bold text-muted-foreground">{feature.unit}</span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${getAccuracyColor(p.accuracy)}`}>
-                              {p.accuracy !== null ? `${p.accuracy}% Accurate` : 'Pending'}
                             </div>
                           </td>
                           <td className="px-8 py-6">

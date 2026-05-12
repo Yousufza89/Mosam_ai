@@ -38,7 +38,7 @@ export class WeatherService {
       const randomVariation = (Math.random() - 0.5) * 4
 
       return {
-        temperature: (baseTemp[city] || 25) + seasonalVariation + randomVariation
+        temperature: (baseTemp[city as keyof typeof baseTemp] || 25) + seasonalVariation + randomVariation
       }
 
     } catch (error) {
@@ -71,27 +71,9 @@ export class WeatherService {
       let predictedValue: number
       let actualValue: number
 
-      switch (prediction.feature) {
-        case 'temperature_min':
-          predictedValue = prediction.rlCorrectedTemp
-          actualValue = actualWeather.temperature - 2 // Min temp is usually lower
-          break
-        case 'temperature_max':
-          predictedValue = prediction.rlCorrectedTemp
-          actualValue = actualWeather.temperature + 2 // Max temp is usually higher
-          break
-        case 'wind_speed':
-          predictedValue = prediction.rlCorrectedTemp
-          actualValue = actualWeather.temperature * 0.1 // Rough wind speed calculation
-          break
-        case 'precipitation':
-          predictedValue = prediction.rlCorrectedTemp
-          actualValue = Math.random() * 10 // Simulated precipitation
-          break
-        default:
-          predictedValue = prediction.rlCorrectedTemp
-          actualValue = actualWeather.temperature
-      }
+      // Default temperature comparison
+      predictedValue = prediction.rlCorrectedTemp
+      actualValue = actualWeather.temperature
 
       // Calculate accuracy percentage
       const difference = Math.abs(predictedValue - actualValue)
