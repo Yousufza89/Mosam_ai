@@ -17,8 +17,23 @@ import {
   Loader2,
   Check,
   Radio,
-  Users
+  Users,
+  CloudSun
 } from "lucide-react";
+
+const ICON_MAP: Record<string, any> = {
+  Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer, CloudSnowflake,
+};
+
+// Add CloudSun to the mapping for sunny weather
+ICON_MAP['CloudSun'] = CloudSun;
+
+const ICON_MAP: Record<string, any> = {
+  Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer, CloudSnowflake,
+};
+
+// Add CloudSun to the mapping
+ICON_MAP['CloudSun'] = CloudSun;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,8 +88,37 @@ const ICON_MAP: Record<string, any> = {
   Sun, Cloud, CloudSun, CloudRain, Zap, Wind, Droplets, Thermometer, CloudSnowflake,
 };
 
+// Add CloudSun to the mapping for sunny weather
+ICON_MAP['CloudSun'] = CloudSun;
+
 function getIcon(name: string) {
   return ICON_MAP[name] || Cloud;
+}
+
+function getWeatherIcon(condition: string) {
+  // Map weather conditions to appropriate icons
+  switch (condition?.toLowerCase()) {
+    case 'sunny':
+    return ICON_MAP['CloudSun'];
+    case 'clear':
+      return ICON_MAP['Sun'];
+    case 'partly cloudy':
+      return ICON_MAP['Cloud'];
+    case 'cloudy':
+      return ICON_MAP['CloudRain'];
+    case 'rain':
+      return ICON_MAP['CloudRain'];
+    case 'thunderstorm':
+      return ICON_MAP['CloudRain'];
+    case 'snow':
+      return ICON_MAP['CloudSnowflake'];
+    case 'fog':
+      return ICON_MAP['Cloud'];
+    case 'mist':
+      return ICON_MAP['Cloud'];
+    default:
+      return ICON_MAP['Cloud'];
+  }
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
